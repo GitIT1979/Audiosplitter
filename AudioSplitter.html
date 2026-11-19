@@ -324,6 +324,12 @@
         .hint { font-size: 0.74rem; color: var(--dim); line-height: 1.5; }
         .note-warn { color: #fbbf24; }
         .note a { color: #c084fc; }
+
+        .voice { padding: 10px 14px; display: grid; gap: 9px; }
+        .voice-row { display: grid; grid-template-columns: 88px 1fr; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--muted); }
+        .voice-row select { width: 100%; }
+        .check-row { display: flex; align-items: center; gap: 8px; font-size: 0.76rem; color: var(--muted); }
+        .check-row input { accent-color: var(--accent); }
         .note { padding: 0 14px 12px; font-size: 0.72rem; color: var(--dim); line-height: 1.5; }
 
         /* ---------- дорожки ---------- */
@@ -587,6 +593,55 @@
                         <p class="note">Сэмпл звучит с указанной секунды и подмешивается в прослушивание и экспорт. На волне его можно тянуть за плашку с названием.</p>
                         <p class="note note-warn" id="micHint" hidden></p>
                         <input type="file" id="sampleInput" accept="audio/*" multiple hidden>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-head">
+                            <h2>Голос</h2>
+                            <div class="spacer"></div>
+                            <button type="button" class="btn btn-ghost small" id="voicePreviewBtn" disabled>▶ Послушать</button>
+                            <button type="button" class="btn btn-primary small" id="voiceApplyBtn" disabled>Применить</button>
+                        </div>
+                        <div class="voice">
+                            <label class="voice-row">
+                                <span>Дорожка</span>
+                                <select id="voiceTarget" aria-label="К какой дорожке применить обработку"></select>
+                            </label>
+                            <label class="slider-row">
+                                <span>Шумодав</span>
+                                <input type="range" id="voiceDenoise" min="0" max="100" step="5" value="0" aria-label="Шумоподавление">
+                                <span class="val" id="voiceDenoiseVal">0%</span>
+                            </label>
+                            <label class="slider-row">
+                                <span>Автотюн</span>
+                                <input type="range" id="voiceTune" min="0" max="100" step="5" value="0" aria-label="Сила автотюна">
+                                <span class="val" id="voiceTuneVal">0%</span>
+                            </label>
+                            <label class="voice-row">
+                                <span>Скорость</span>
+                                <select id="voiceSpeed" aria-label="Скорость подстройки">
+                                    <option value="fast">Быстро</option>
+                                    <option value="normal" selected>Обычно</option>
+                                    <option value="smooth">Плавно</option>
+                                </select>
+                            </label>
+                            <label class="voice-row">
+                                <span>Лад</span>
+                                <select id="voiceScale" aria-label="Лад">
+                                    <option value="chromatic" selected>Хроматика</option>
+                                    <option value="major">Мажор</option>
+                                    <option value="minor">Минор</option>
+                                </select>
+                            </label>
+                            <label class="voice-row">
+                                <span>Тоника</span>
+                                <select id="voiceKey" aria-label="Тоника"></select>
+                            </label>
+                            <label class="check-row"><input type="checkbox" id="voiceHighpass" checked> Обрезать низ (80 Гц)</label>
+                            <label class="check-row"><input type="checkbox" id="voiceCompressor"> Компрессор</label>
+                            <label class="check-row"><input type="checkbox" id="voiceNormalize" checked> Нормализовать до −1 дБ</label>
+                        </div>
+                        <p class="note">Обработка заменяет выбранную дорожку — отменяется кнопкой ↶. Автотюн рассчитан на монофонический голос: аккорды и шум он не исправляет.</p>
                     </section>
                 </aside>
             </div>
@@ -999,6 +1054,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
         samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'), micHint: $('micHint'),
+        voiceTarget: $('voiceTarget'), voiceDenoise: $('voiceDenoise'), voiceDenoiseVal: $('voiceDenoiseVal'),
+        voiceTune: $('voiceTune'), voiceTuneVal: $('voiceTuneVal'), voiceSpeed: $('voiceSpeed'),
+        voiceScale: $('voiceScale'), voiceKey: $('voiceKey'),
+        voiceHighpass: $('voiceHighpass'), voiceCompressor: $('voiceCompressor'), voiceNormalize: $('voiceNormalize'),
+        voicePreviewBtn: $('voicePreviewBtn'), voiceApplyBtn: $('voiceApplyBtn'),
         toast: $('toast'),
     };
 
@@ -1369,6 +1429,432 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             const frac = pos - i0;
             left[outOffset + i] += (dataL[i0] + (dataL[i1] - dataL[i0]) * frac) * gain;
             right[outOffset + i] += (dataR[i0] + (dataR[i1] - dataR[i0]) * frac) * gain;
+        }
+    }
+
+    /* ------------------------------------------------- обработка голоса */
+
+    function hannWindow(size) {
+        const win = new Float32Array(size);
+        for (let i = 0; i < size; i++) win[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (size - 1));
+        return win;
+    }
+
+    function fftRadix2(re, im, inverse) {
+        const n = re.length;
+        for (let i = 1, j = 0; i < n; i++) {
+            let bit = n >> 1;
+            for (; j & bit; bit >>= 1) j ^= bit;
+            j ^= bit;
+            if (i < j) {
+                let t = re[i]; re[i] = re[j]; re[j] = t;
+                t = im[i]; im[i] = im[j]; im[j] = t;
+            }
+        }
+        for (let len = 2; len <= n; len <<= 1) {
+            const ang = ((inverse ? 2 : -2) * Math.PI) / len;
+            const wRe = Math.cos(ang);
+            const wIm = Math.sin(ang);
+            const half = len >> 1;
+            for (let i = 0; i < n; i += len) {
+                let curRe = 1;
+                let curIm = 0;
+                for (let j = 0; j < half; j++) {
+                    const uRe = re[i + j];
+                    const uIm = im[i + j];
+                    const vRe = re[i + j + half] * curRe - im[i + j + half] * curIm;
+                    const vIm = re[i + j + half] * curIm + im[i + j + half] * curRe;
+                    re[i + j] = uRe + vRe;
+                    im[i + j] = uIm + vIm;
+                    re[i + j + half] = uRe - vRe;
+                    im[i + j + half] = uIm - vIm;
+                    const nextRe = curRe * wRe - curIm * wIm;
+                    curIm = curRe * wIm + curIm * wRe;
+                    curRe = nextRe;
+                }
+            }
+        }
+        if (inverse) {
+            for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+        }
+    }
+
+    // Спектральное вычитание: профиль шума — минимум модуля по кадрам
+    function denoiseChannel(data, rate, strength) {
+        const frame = 1024;
+        const hop = 256;
+        if (data.length < frame * 2) return;
+        const win = hannWindow(frame);
+        const frames = Math.floor((data.length - frame) / hop) + 1;
+        const bins = frame / 2 + 1;
+        const noise = new Float32Array(bins).fill(1e9);
+        const re = new Float32Array(frame);
+        const im = new Float32Array(frame);
+
+        for (let f = 0; f < frames; f++) {
+            const off = f * hop;
+            for (let i = 0; i < frame; i++) { re[i] = data[off + i] * win[i]; im[i] = 0; }
+            fftRadix2(re, im, false);
+            for (let b = 0; b < bins; b++) {
+                const mag = Math.hypot(re[b], im[b]);
+                if (mag < noise[b]) noise[b] = mag;
+            }
+        }
+
+        const alpha = 1.1 + strength * 2.4;
+        const out = new Float32Array(data.length);
+        const norm = new Float32Array(data.length);
+
+        for (let f = 0; f < frames; f++) {
+            const off = f * hop;
+            for (let i = 0; i < frame; i++) { re[i] = data[off + i] * win[i]; im[i] = 0; }
+            fftRadix2(re, im, false);
+            for (let b = 1; b <= frame / 2; b++) {
+                const mag = Math.hypot(re[b], im[b]) || 1e-9;
+                const gain = Math.max(0.08, 1 - (alpha * noise[b]) / mag);
+                re[b] *= gain;
+                im[b] *= gain;
+                if (b < frame / 2) { re[frame - b] *= gain; im[frame - b] *= gain; }
+            }
+            fftRadix2(re, im, true);
+            for (let i = 0; i < frame; i++) {
+                out[off + i] += re[i] * win[i];
+                norm[off + i] += win[i] * win[i];
+            }
+        }
+
+        for (let i = 0; i < data.length; i++) {
+            data[i] = norm[i] > 1e-6 ? out[i] / Math.max(norm[i], 0.15) : 0;
+        }
+    }
+
+    function detectPitch(data, offset, frame, rate, scratch) {
+        const size = scratch.size;
+        const re = scratch.re;
+        const im = scratch.im;
+        for (let i = 0; i < size; i++) { re[i] = 0; im[i] = 0; }
+        for (let i = 0; i < frame; i++) re[i] = data[offset + i] * scratch.win[i];
+        fftRadix2(re, im, false);
+        for (let i = 0; i < size; i++) {
+            const power = re[i] * re[i] + im[i] * im[i];
+            re[i] = power;
+            im[i] = 0;
+        }
+        fftRadix2(re, im, true);
+
+        const r0 = re[0] || 1e-9;
+        const minLag = Math.max(2, Math.floor(rate / 500));
+        const maxLag = Math.min(Math.floor(size / 2) - 1, Math.ceil(rate / 70));
+        let best = -1;
+        let bestLag = 0;
+        for (let lag = minLag; lag <= maxLag; lag++) {
+            const value = re[lag] / r0;
+            if (value > best) { best = value; bestLag = lag; }
+        }
+        if (best < 0.32 || bestLag < 2) return null;
+
+        const y1 = re[bestLag - 1] / r0;
+        const y2 = re[bestLag] / r0;
+        const y3 = re[bestLag + 1] / r0;
+        const denom = 2 * (2 * y2 - y1 - y3);
+        const delta = denom ? (y3 - y1) / denom : 0;
+        return { freq: rate / (bestLag + delta), confidence: best };
+    }
+
+    function resampleTo(data, length) {
+        const out = new Float32Array(length);
+        const ratio = data.length / Math.max(1, length);
+        for (let i = 0; i < length; i++) {
+            const pos = i * ratio;
+            const i0 = Math.min(data.length - 1, Math.floor(pos));
+            const i1 = Math.min(data.length - 1, i0 + 1);
+            const frac = pos - i0;
+            out[i] = data[i0] + (data[i1] - data[i0]) * frac;
+        }
+        return out;
+    }
+
+    // Растяжение по времени с поиском фазы — потом ресемплинг даёт сдвиг тона без смены длительности
+    function wsolaStretch(data, factor) {
+        const frame = 1024;
+        const hop = 256;
+        const search = 48;
+        if (data.length < frame + search + 4) return data.slice();
+        const outLen = Math.round(data.length * factor);
+        const out = new Float32Array(outLen + frame);
+        const norm = new Float32Array(outLen + frame);
+        const win = hannWindow(frame);
+        let inPos = 0;
+        let outPos = 0;
+        let prevCont = null;
+
+        while (outPos + frame <= outLen) {
+            let bestShift = 0;
+            if (prevCont) {
+                let best = -Infinity;
+                for (let d = -search; d <= search; d += 2) {
+                    const start = inPos + d;
+                    if (start < 0 || start + search >= data.length) continue;
+                    let sum = 0;
+                    for (let i = 0; i < search; i++) sum += data[start + i] * prevCont[i];
+                    if (sum > best) { best = sum; bestShift = d; }
+                }
+            }
+            const src = clamp(inPos + bestShift, 0, Math.max(0, data.length - frame - 1));
+            for (let i = 0; i < frame; i++) {
+                out[outPos + i] += data[src + i] * win[i];
+                norm[outPos + i] += win[i];
+            }
+            const contStart = clamp(src + hop, 0, Math.max(0, data.length - search));
+            prevCont = data.subarray(contStart, contStart + search);
+            inPos += hop * factor;
+            outPos += hop;
+        }
+
+        for (let i = 0; i < out.length; i++) {
+            if (norm[i] > 1e-4) out[i] /= norm[i];
+        }
+        return out.subarray(0, outLen);
+    }
+
+    function shiftSegment(segment, ratio) {
+        if (Math.abs(ratio - 1) < 1e-3) return segment;
+        // Читаем сегмент быстрее/медленнее — тон смещается, длина остаётся
+        const out = new Float32Array(segment.length);
+        for (let i = 0; i < segment.length; i++) {
+            const pos = i * ratio;
+            const i0 = Math.min(segment.length - 1, Math.floor(pos));
+            const i1 = Math.min(segment.length - 1, i0 + 1);
+            out[i] = segment[i0] + (segment[i1] - segment[i0]) * (pos - i0);
+        }
+        return out;
+    }
+
+    // Применяем по сегментам (≈0,4 с) с кроссфейдом: внутри сегмента сдвиг постоянный
+    function applyTuneRatios(data, rate, ratios, hop, frames) {
+        const segLen = Math.max(2048, Math.round(rate * 0.25));
+        const step = Math.max(1024, Math.round(segLen / 2));
+        const acc = new Float32Array(data.length);
+        const weight = new Float32Array(data.length);
+
+        for (let start = 0; start < data.length; start += step) {
+            const end = Math.min(data.length, start + segLen);
+            // короткий хвост не обрабатываем: WSOLA требует целый кадр
+            if (end - start < 1200) break;
+            const from = Math.min(frames - 1, Math.floor(start / hop));
+            const to = Math.min(frames - 1, Math.floor(end / hop));
+            let sum = 0;
+            let count = 0;
+            for (let k = from; k <= to; k++) { sum += ratios[k]; count += 1; }
+            const ratio = count ? sum / count : 1;
+            const segment = data.subarray(start, end);
+            const shifted = shiftSegment(segment, ratio);
+            const length = shifted.length;
+            for (let i = 0; i < length; i++) {
+                const w = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / Math.max(1, length - 1));
+                acc[start + i] += shifted[i] * w;
+                weight[start + i] += w;
+            }
+        }
+
+        for (let i = 0; i < data.length; i++) {
+            if (weight[i] > 1e-3) data[i] = acc[i] / weight[i];
+        }
+    }
+
+    // Автотюн: определяем высоту кадра и тянем к ближайшей ноте лада
+    let lastTuneRatios = null;
+
+    function autotuneChannel(data, rate, opts) {
+        const frame = 2048;
+        const hop = 1024;
+        if (data.length < frame * 2) return;
+        const frames = Math.floor((data.length - frame) / hop) + 1;
+        const win = hannWindow(frame);
+        const scratch = { size: frame * 2, re: new Float32Array(frame * 2), im: new Float32Array(frame * 2), win };
+        const ratios = new Float32Array(frames);
+        const semis = opts.scale === 'major' ? [0, 2, 4, 5, 7, 9, 11]
+            : opts.scale === 'minor' ? [0, 2, 3, 5, 7, 8, 10] : null;
+        let smoothed = 1;
+        const coeff = opts.speed === 'fast' ? 0.55 : opts.speed === 'smooth' ? 0.08 : 0.22;
+
+        for (let f = 0; f < frames; f++) {
+            const pitch = detectPitch(data, f * hop, frame, rate, scratch);
+            let target = 1;
+            if (pitch) {
+                const midi = 69 + 12 * Math.log2(pitch.freq / 440);
+                let targetMidi = Math.round(midi);
+                if (semis) {
+                    const rel = ((midi - opts.key) % 12 + 12) % 12;
+                    let bestDiff = 0;
+                    let found = false;
+                    for (const s of semis) {
+                        let diff = s - rel;
+                        if (diff > 6) diff -= 12;
+                        if (diff < -6) diff += 12;
+                        if (!found || Math.abs(diff) < Math.abs(bestDiff)) { bestDiff = diff; found = true; }
+                    }
+                    targetMidi = midi + bestDiff;
+                }
+                const ratio = Math.pow(2, (targetMidi - midi) / 12);
+                target = 1 + (ratio - 1) * opts.strength;
+            }
+            smoothed += (target - smoothed) * coeff;
+            ratios[f] = smoothed;
+        }
+        lastTuneRatios = ratios;
+        applyTuneRatios(data, rate, ratios, hop, frames);
+    }
+
+    function compressChannel(data, rate) {
+        const threshold = Math.pow(10, -18 / 20);
+        const ratio = 3;
+        const attack = Math.exp(-1 / (0.01 * rate));
+        const release = Math.exp(-1 / (0.15 * rate));
+        let env = 0;
+        for (let i = 0; i < data.length; i++) {
+            const level = Math.abs(data[i]);
+            env = level > env ? attack * env + (1 - attack) * level : release * env + (1 - release) * level;
+            if (env > threshold) data[i] *= Math.pow(env / threshold, 1 / ratio - 1);
+        }
+    }
+
+    function processVoiceBuffer(sample, settings) {
+        const src = sample.buffer;
+        const rate = src.sampleRate;
+        const channels = [];
+        for (let c = 0; c < src.numberOfChannels; c++) channels.push(src.getChannelData(c).slice());
+
+        if (settings.highpass) {
+            for (const channel of channels) makeFilter('highpass', 80, rate).process(channel);
+        }
+        if (settings.denoise > 0) {
+            for (const channel of channels) denoiseChannel(channel, rate, settings.denoise / 100);
+        }
+        if (settings.tune > 0) {
+            for (const channel of channels) {
+                autotuneChannel(channel, rate, {
+                    strength: settings.tune / 100,
+                    speed: settings.speed,
+                    scale: settings.scale,
+                    key: settings.key,
+                });
+            }
+        }
+        if (settings.compressor) {
+            for (const channel of channels) compressChannel(channel, rate);
+        }
+        if (settings.normalize) {
+            let peak = 0;
+            for (const channel of channels) {
+                for (let i = 0; i < channel.length; i++) {
+                    const value = Math.abs(channel[i]);
+                    if (value > peak) peak = value;
+                }
+            }
+            if (peak > 1e-6) {
+                const scale = 0.891 / peak;
+                for (const channel of channels) for (let i = 0; i < channel.length; i++) channel[i] *= scale;
+            }
+        }
+        for (const channel of channels) {
+            for (let i = 0; i < channel.length; i++) channel[i] = clamp(channel[i], -1, 1);
+        }
+
+        const ctx = getContext();
+        const out = ctx.createBuffer(channels.length, src.length, rate);
+        channels.forEach((channel, index) => out.copyToChannel(channel, index));
+        return out;
+    }
+
+    function voiceSettings() {
+        return {
+            denoise: Number(el.voiceDenoise.value),
+            tune: Number(el.voiceTune.value),
+            speed: el.voiceSpeed.value,
+            scale: el.voiceScale.value,
+            key: Number(el.voiceKey.value),
+            highpass: el.voiceHighpass.checked,
+            compressor: el.voiceCompressor.checked,
+            normalize: el.voiceNormalize.checked,
+        };
+    }
+
+    function voiceSample() {
+        const id = Number(el.voiceTarget.value);
+        return app.samples.find((sample) => sample.id === id) || null;
+    }
+
+    function renderVoiceTargets() {
+        const select = el.voiceTarget;
+        const previous = select.value;
+        select.innerHTML = '';
+        if (!app.samples.length) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Нет дорожек';
+            select.appendChild(option);
+            select.disabled = true;
+            el.voicePreviewBtn.disabled = true;
+            el.voiceApplyBtn.disabled = true;
+            return;
+        }
+        select.disabled = false;
+        app.samples.forEach((sample) => {
+            const option = document.createElement('option');
+            option.value = String(sample.id);
+            option.textContent = sample.name;
+            select.appendChild(option);
+        });
+        if (app.samples.some((sample) => String(sample.id) === previous)) select.value = previous;
+        el.voicePreviewBtn.disabled = false;
+        el.voiceApplyBtn.disabled = false;
+    }
+
+    function updateVoiceLabels() {
+        el.voiceDenoiseVal.textContent = `${el.voiceDenoise.value}%`;
+        el.voiceTuneVal.textContent = `${el.voiceTune.value}%`;
+    }
+
+    async function previewVoice() {
+        const sample = voiceSample();
+        if (!sample || app.busy) return;
+        app.busy = true;
+        toast('Обрабатываю голос…', 'info', 0);
+        await tick();
+        try {
+            const buffer = processVoiceBuffer(sample, voiceSettings());
+            hideToast();
+            playContext = null;
+            stopPlayback();
+            playBuffer(buffer, { start: sample.start, end: sample.start + buffer.duration }, 0, 1);
+        } catch (error) {
+            console.error(error);
+            hideToast();
+            toast(`Не удалось обработать: ${error.message}`, 'error', 6000);
+        } finally {
+            app.busy = false;
+        }
+    }
+
+    async function applyVoice() {
+        const sample = voiceSample();
+        if (!sample || app.busy) return;
+        app.busy = true;
+        toast('Обрабатываю голос…', 'info', 0);
+        await tick();
+        try {
+            const processed = processVoiceBuffer(sample, voiceSettings());
+            snapshot('обработка голоса');
+            sample.buffer = processed;
+            renderSamples();
+            draw();
+            toast('Голос обработан — вернуть можно кнопкой ↶', 'ok', 3600);
+        } catch (error) {
+            console.error(error);
+            toast(`Не удалось обработать: ${error.message}`, 'error', 6000);
+        } finally {
+            app.busy = false;
         }
     }
 
@@ -2523,6 +3009,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
 
     function renderSamples() {
+        renderVoiceTargets();
         if (!app.samples.length) {
             el.samples.innerHTML = '<p class="empty">Сэмплов нет. Добавьте звук или запишите дорожку — она ляжет поверх трека.</p>';
             return;
@@ -3137,6 +3624,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         else startRecording();
     });
 
+    el.voiceDenoise.addEventListener('input', updateVoiceLabels);
+    el.voiceTune.addEventListener('input', updateVoiceLabels);
+    el.voicePreviewBtn.addEventListener('click', previewVoice);
+    el.voiceApplyBtn.addEventListener('click', applyVoice);
+
     el.volume.addEventListener('input', () => {
         app.volume = Number(el.volume.value);
         if (player.gain) player.gain.gain.value = app.volume;
@@ -3346,6 +3838,13 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     updateSoundLabels();
     updateUndoUi();
     checkMicAvailability();
+    ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].forEach((name, index) => {
+        const option = document.createElement('option');
+        option.value = String(index);
+        option.textContent = name;
+        el.voiceKey.appendChild(option);
+    });
+    updateVoiceLabels();
     recordLabel(false);
     renderStems();
     renderSamples();
@@ -3400,6 +3899,56 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 peak: Number(peak.toFixed(6)),
                 first: Array.from(data.left.slice(0, 4)).map((v) => Number(v.toFixed(6))),
             };
+        },
+        get tuneRatios() {
+            return lastTuneRatios ? Array.from(lastTuneRatios.slice(0, 8)).map((v) => Number(v.toFixed(4))) : null;
+        },
+        voice(id, settings) {
+            const sample = app.samples.find((item) => item.id === Number(id));
+            if (!sample) return null;
+            const started = performance.now();
+            const buffer = processVoiceBuffer(sample, settings);
+            const data = buffer.getChannelData(0);
+            let peak = 0;
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+                const v = Math.abs(data[i]);
+                if (v > peak) peak = v;
+                sum += data[i] * data[i];
+            }
+            return {
+                ms: Math.round(performance.now() - started),
+                duration: Number(buffer.duration.toFixed(3)),
+                peak: Number(peak.toFixed(4)),
+                rms: Number(Math.sqrt(sum / data.length).toFixed(5)),
+            };
+        },
+        pitch(id) {
+            const sample = app.samples.find((item) => item.id === Number(id));
+            if (!sample) return null;
+            const data = sample.buffer.getChannelData(0);
+            const rate = sample.buffer.sampleRate;
+            const frame = 2048;
+            const hop = 1024;
+            const scratch = { size: frame * 2, re: new Float32Array(frame * 2), im: new Float32Array(frame * 2), win: hannWindow(frame) };
+            const found = [];
+            for (let offset = 0; offset + frame < data.length; offset += hop) {
+                const pitch = detectPitch(data, offset, frame, rate, scratch);
+                if (pitch && pitch.confidence > 0.5) found.push(pitch.freq);
+            }
+            if (!found.length) return null;
+            found.sort((a, b) => a - b);
+            return Number(found[Math.floor(found.length / 2)].toFixed(2));
+        },
+        voiceApply(id, settings) {
+            const sample = app.samples.find((item) => item.id === Number(id));
+            if (!sample) return null;
+            const started = performance.now();
+            const processed = processVoiceBuffer(sample, settings);
+            sample.buffer = processed;
+            renderSamples();
+            draw();
+            return { ms: Math.round(performance.now() - started), duration: Number(processed.duration.toFixed(3)) };
         },
     };
 })();
