@@ -620,6 +620,7 @@
                             <label class="voice-row">
                                 <span>Скорость</span>
                                 <select id="voiceSpeed" aria-label="Скорость подстройки">
+                                    <option value="instant">Мгновенно</option>
                                     <option value="fast">Быстро</option>
                                     <option value="normal" selected>Обычно</option>
                                     <option value="smooth">Плавно</option>
@@ -1630,12 +1631,13 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return out;
     }
 
-    // Применяем по сегментам (≈0,4 с) с кроссфейдом: внутри сегмента сдвиг постоянный
-    function applyTuneRatios(data, rate, ratios, hop, frames) {
+    // Применяем по сегментам (≈0,25 с) с кроссфейдом: внутри сегмента сдвиг постоянный
+    function applyTuneRatios(data, rate, ratios, voiced, hop, frames) {
         const segLen = Math.max(2048, Math.round(rate * 0.25));
         const step = Math.max(1024, Math.round(segLen / 2));
         const acc = new Float32Array(data.length);
         const weight = new Float32Array(data.length);
+        let previous = 1;
 
         for (let start = 0; start < data.length; start += step) {
             const end = Math.min(data.length, start + segLen);
@@ -1643,10 +1645,19 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             if (end - start < 1200) break;
             const from = Math.min(frames - 1, Math.floor(start / hop));
             const to = Math.min(frames - 1, Math.floor(end / hop));
-            let sum = 0;
-            let count = 0;
-            for (let k = from; k <= to; k++) { sum += ratios[k]; count += 1; }
-            const ratio = count ? sum / count : 1;
+
+            // Медиана по озвученным кадрам: паузы и срывы не разбавляют коррекцию
+            const values = [];
+            for (let k = from; k <= to; k++) if (voiced[k]) values.push(ratios[k]);
+            let ratio;
+            if (values.length) {
+                values.sort((a, b) => a - b);
+                ratio = values[Math.floor(values.length / 2)];
+                previous = ratio;
+            } else {
+                ratio = previous;
+            }
+
             const segment = data.subarray(start, end);
             const shifted = shiftSegment(segment, ratio);
             const length = shifted.length;
@@ -1673,15 +1684,19 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const win = hannWindow(frame);
         const scratch = { size: frame * 2, re: new Float32Array(frame * 2), im: new Float32Array(frame * 2), win };
         const ratios = new Float32Array(frames);
+        const voiced = new Uint8Array(frames);
         const semis = opts.scale === 'major' ? [0, 2, 4, 5, 7, 9, 11]
             : opts.scale === 'minor' ? [0, 2, 3, 5, 7, 8, 10] : null;
         let smoothed = 1;
-        const coeff = opts.speed === 'fast' ? 0.55 : opts.speed === 'smooth' ? 0.08 : 0.22;
+        const coeff = opts.speed === 'instant' ? 0.92
+            : opts.speed === 'fast' ? 0.62
+                : opts.speed === 'smooth' ? 0.08 : 0.26;
 
         for (let f = 0; f < frames; f++) {
             const pitch = detectPitch(data, f * hop, frame, rate, scratch);
             let target = 1;
             if (pitch) {
+                voiced[f] = 1;
                 const midi = 69 + 12 * Math.log2(pitch.freq / 440);
                 let targetMidi = Math.round(midi);
                 if (semis) {
@@ -1703,7 +1718,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             ratios[f] = smoothed;
         }
         lastTuneRatios = ratios;
-        applyTuneRatios(data, rate, ratios, hop, frames);
+        applyTuneRatios(data, rate, ratios, voiced, hop, frames);
     }
 
     function compressChannel(data, rate) {
