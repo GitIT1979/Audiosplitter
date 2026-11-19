@@ -322,6 +322,8 @@
         }
 
         .hint { font-size: 0.74rem; color: var(--dim); line-height: 1.5; }
+        .note-warn { color: #fbbf24; }
+        .note a { color: #c084fc; }
         .note { padding: 0 14px 12px; font-size: 0.72rem; color: var(--dim); line-height: 1.5; }
 
         /* ---------- дорожки ---------- */
@@ -571,6 +573,7 @@
                                 <span class="val" id="highVal">0 дБ</span>
                             </label>
                         </div>
+                        <p class="note">Скорость меняет темп и тон одновременно (как при ускорении плёнки) и применяется к тому, что слушаете или сохраняете.</p>
                     </section>
 
                     <section class="card">
@@ -582,7 +585,7 @@
                         </div>
                         <div class="samples" id="samples"></div>
                         <p class="note">Сэмпл звучит с указанной секунды и подмешивается в прослушивание и экспорт. На волне его можно тянуть за плашку с названием.</p>
-                        <p class="note">Скорость меняет темп и тон одновременно (как при ускорении плёнки) и применяется к тому, что слушаете или сохраняете.</p>
+                        <p class="note note-warn" id="micHint" hidden></p>
                         <input type="file" id="sampleInput" accept="audio/*" multiple hidden>
                     </section>
                 </aside>
@@ -995,7 +998,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
-        samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'),
+        samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'), micHint: $('micHint'),
         toast: $('toast'),
     };
 
@@ -2606,6 +2609,55 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     const recorder = { active: false, media: null, stream: null, chunks: [], start: 0, count: 0 };
 
+    const PAGES_URL = 'https://gitit1979.github.io/Audiosplitter/';
+
+    function micReason() {
+        const api = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        const insecure = !window.isSecureContext;
+        const mobileFile = location.protocol === 'file:' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (!api) return 'api';
+        if (insecure || mobileFile) return 'https';
+        return null;
+    }
+
+    // Подсказка про HTTPS: из локального файла на телефоне браузер микрофон не даёт
+    function checkMicAvailability() {
+        if (!el.micHint) return;
+        const reason = micReason();
+        if (!reason) { el.micHint.hidden = true; return; }
+        el.micHint.hidden = false;
+        el.micHint.textContent = reason === 'https'
+            ? 'Запись с микрофона здесь недоступна: браузер требует HTTPS. Откройте '
+            : 'Браузер не поддерживает запись с микрофона. Попробуйте открыть ';
+        const link = document.createElement('a');
+        link.href = PAGES_URL;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = PAGES_URL;
+        el.micHint.appendChild(link);
+        el.micHint.appendChild(document.createTextNode(' — по этой ссылке запись работает, в том числе с телефона.'));
+    }
+
+    // Просим микрофон без обработки (эхо-подавление и АРУ портят музыку),
+    // но если устройство не умеет — откатываемся к простому запросу
+    async function requestMic() {
+        const preferred = {
+            audio: {
+                echoCancellation: { ideal: false },
+                noiseSuppression: { ideal: false },
+                autoGainControl: { ideal: false },
+            },
+        };
+        try {
+            return await navigator.mediaDevices.getUserMedia(preferred);
+        } catch (error) {
+            if (error && ['OverconstrainedError', 'TypeError', 'NotSupportedError'].includes(error.name)) {
+                return navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+            throw error;
+        }
+    }
+
     function recordLabel(on) {
         el.recordBtn.classList.toggle('is-recording', on);
         el.recordBtn.textContent = on ? '■' : '🎤';
@@ -2615,8 +2667,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     async function startRecording() {
         if (recorder.active || !app.buffer) return;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            toast('Браузер не даёт доступ к микрофону', 'error', 5000);
+        const reason = micReason();
+        if (reason) {
+            toast(reason === 'https'
+                ? `Запись из локального файла браузер блокирует. Откройте ${PAGES_URL}`
+                : 'Браузер не поддерживает запись с микрофона', 'error', 9000);
+            checkMicAvailability();
             return;
         }
         if (typeof MediaRecorder === 'undefined') {
@@ -2626,10 +2682,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
         let stream;
         try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream = await requestMic();
         } catch (error) {
             console.error(error);
-            toast('Нет доступа к микрофону — разрешите его в настройках браузера', 'error', 7000);
+            toast(error && error.name === 'NotAllowedError'
+                ? 'Микрофон запрещён — разрешите доступ в настройках сайта'
+                : 'Не удалось включить микрофон — проверьте разрешение и подключение', 'error', 8000);
             return;
         }
 
@@ -2658,7 +2716,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         playContext = { kind: 'mix' };
         await playRange(recorder.start, app.buffer.duration, { ...soundOptions(), speed: 1 });
         recorder.media.start(250);
-        toast('Запись: играет трек, пишется микрофон', 'info', 3000);
+        toast('Запись пошла. Наденьте наушники — иначе микрофон запишет и трек.', 'info', 4200);
     }
 
     function stopRecording() {
@@ -3287,6 +3345,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     updateTimeUi();
     updateSoundLabels();
     updateUndoUi();
+    checkMicAvailability();
     recordLabel(false);
     renderStems();
     renderSamples();
