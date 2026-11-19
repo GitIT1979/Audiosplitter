@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Нарезка аудиофайлов на сегменты: равные части или произвольные фрагменты по меткам, с прослушиванием и экспортом в WAV.">
+    <meta name="theme-color" content="#0f172a">
+    <title>Audio Splitter</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a, #581c87, #0f172a);
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+        h1 { font-size: 2rem; font-weight: bold; text-align: center; margin-bottom: 0.5rem; }
+        .subtitle { text-align: center; color: #94a3b8; margin-bottom: 2rem; }
+        .upload-area {
+            border: 2px dashed #475569;
+            border-radius: 1rem;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-area:hover { border-color: #a855f7; }
+        .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .upload-text { font-size: 1.1rem; font-weight: 500; }
+        .upload-hint { font-size: 0.875rem; color: #94a3b8; margin-top: 0.5rem; }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .card h3 { font-weight: 600; margin-bottom: 1rem; }
+        .info-row { display: flex; gap: 1rem; font-size: 0.875rem; color: #94a3b8; flex-wrap: wrap; }
+        .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        input[type="number"], select {
+            flex: 1;
+            padding: 0.625rem 1rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+        }
+        .btn-main {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(to right, #9333ea, #db2777);
+            border: none;
+            border-radius: 0.75rem;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .btn-download {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            background: #334155;
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            cursor: pointer;
+        }
+        .segment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .hidden { display: none; }
+        input[type="radio"] { accent-color: #a855f7; }
+        input[type="text"] {
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #475569;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 0.875rem;
+        }
+        .player {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 0.5rem;
+        }
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .btn-play {
+            padding: 0.5rem 1rem;
+            background: #10b981;
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .btn-play:hover { background: #059669; }
+        .btn-play.playing { background: #f59e0b; }
+        .btn-play.playing:hover { background: #d97706; }
+        .btn-rewind, .btn-forward {
+            padding: 0.5rem 0.75rem;
+            background: #475569;
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .btn-rewind:hover, .btn-forward:hover { background: #64748b; }
+        .progress-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #9333ea, #db2777);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        .time-display {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            min-width: 100px;
+            text-align: center;
+        }
+        .timeline {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 0.5rem;
+        }
+        .timeline-bar {
+            position: relative;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+        .timeline-marker {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: #a855f7;
+            cursor: pointer;
+        }
+        .timeline-marker:hover {
+            background: #c084fc;
+            box-shadow: 0 0 0 1px #c084fc;
+        }
+        .timeline-marker-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.625rem;
+            color: #d8b4fe;
+            white-space: nowrap;
+        }
+        .timeline-segments {
+            display: flex;
+            height: 20px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .timeline-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+            color: white;
+            font-weight: 500;
+            border-right: 1px solid rgba(0,0,0,0.3);
+        }
+        .timeline-segment:last-child {
+            border-right: none;
+        }
+        .timeline-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.1);
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(to right, #9333ea, #db2777);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(to right, #9333ea, #db2777);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.1);
+        }
+        .btn-preview {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            background: #10b981;
+            border: none;
+            border-radius: 0.375rem;
+            color: white;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+        .btn-preview:hover {
+            background: #059669;
+        }
+        .btn-preview.playing {
+            background: #f59e0b;
+        }
+        /* --- доступность, состояния и сообщения --- */
+        :focus-visible { outline: 2px solid #c084fc; outline-offset: 2px; }
+        .upload-area:focus-visible { border-color: #c084fc; }
+        .upload-area.dragover { border-color: #c084fc; background: rgba(168, 85, 247, 0.08); }
+        .btn-main:disabled,
+        .btn-download:disabled,
+        .btn-preview:disabled,
+        .btn-ghost:disabled { opacity: 0.45; cursor: not-allowed; }
+        .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+        .btn-ghost {
+            padding: 0.375rem 0.75rem;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.16); }
+        .segment-item { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+        .segment-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+        .segment-name { font-size: 0.875rem; font-weight: 500; word-break: break-word; }
+        .segment-meta { font-size: 0.75rem; color: #94a3b8; }
+        .segments-note {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 0.5rem 0.25rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .marker-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .marker-info { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+        .marker-label { font-size: 0.875rem; }
+        .btn-remove {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            background: #334155;
+            border: none;
+            border-radius: 0.375rem;
+            color: #e2e8f0;
+            cursor: pointer;
+        }
+        .btn-remove:hover { background: #475569; }
+        .hint { color: #64748b; font-size: 0.875rem; }
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 1.5rem;
+            transform: translateX(-50%);
+            max-width: min(560px, calc(100vw - 2rem));
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            background: #1e293b;
+            border: 1px solid rgba(255,255,255,0.16);
+            color: #e2e8f0;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+            z-index: 50;
+        }
+        .toast--error { background: #7f1d1d; border-color: #fca5a5; }
+        .toast--warn { background: #78350f; border-color: #fcd34d; }
+        .toast--ok { background: #064e3b; border-color: #6ee7b7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Audio Splitter</h1>
+        <p class="subtitle">Обрезание аудиофайлов по длительности</p>
+
+        <div id="uploadSection">
+            <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="Выбрать аудиофайл">
+                <input type="file" id="fileInput" accept="audio/*" style="display:none">
+                <div class="upload-icon">📁</div>
+                <p class="upload-text">Нажмите или перетащите аудиофайл</p>
+                <p class="upload-hint">MP3, WAV, OGG, FLAC, M4A, AAC</p>
+            </div>
+        </div>
+
+        <div id="mainSection" class="hidden">
+            <div class="card">
+                <div class="card-head">
+                    <div>
+                        <h2 id="fileName">🎶 Файл</h2>
+                        <div class="info-row">
+                            <span id="fileDuration">⏱ 00:00</span>
+                            <span id="fileSampleRate">📊 0 Гц</span>
+                            <span id="fileChannels">🔊 Стерео</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-ghost" id="reloadBtn">↺ Другой файл</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>⚙️ Настройки нарезки</h3>
+                
+                <div style="margin-bottom:1rem">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;margin-bottom:0.5rem">
+                        <input type="radio" name="mode" value="equal" checked>
+                        <span>Равные сегменты по длительности</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+                        <input type="radio" name="mode" value="custom">
+                        <span>Произвольное обрезание по меткам</span>
+                    </label>
+                </div>
+
+                <div id="equalMode">
+                    <div class="controls">
+                        <input type="number" id="durationInput" value="30" min="1">
+                        <select id="unitSelect">
+                            <option value="seconds">сек</option>
+                            <option value="minutes">мин</option>
+                        </select>
+                    </div>
+                    <p id="segmentCount" style="margin-bottom:1rem;color:#d8b4fe">Сегментов: 0</p>
+                </div>
+
+                <div id="customMode" class="hidden">
+                    <p style="margin-bottom:0.5rem;color:#94a3b8;font-size:0.875rem">Установите длительность фрагмента ползунком или введите вручную (45, 1:30, 1:02:03). Каждая метка = длительность следующего фрагмента от предыдущей точки, порядок меток сохраняется. Остаток до конца файла создаётся автоматически:</p>
+                    <div id="markersList" style="margin-bottom:1rem"></div>
+                    
+                    <div style="margin-bottom:1rem;padding:1rem;background:rgba(0,0,0,0.2);border-radius:0.5rem">
+                        <label style="display:block;margin-bottom:0.5rem;color:#94a3b8;font-size:0.875rem">Длительность фрагмента:</label>
+                        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem">
+                            <span style="font-size:0.75rem;color:#64748b">0</span>
+                            <input type="range" id="durationSlider" min="1" max="60" value="30" step="1" style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.1);outline:none;cursor:pointer">
+                            <span id="sliderMax" style="font-size:0.75rem;color:#64748b">60с</span>
+                        </div>
+                        <div style="display:flex;gap:0.5rem;align-items:center">
+                            <span id="sliderValue" style="font-size:1.25rem;font-weight:bold;color:#d8b4fe;min-width:60px">00:30</span>
+                            <input type="text" id="markerInput" placeholder="или введите: 30 или 1:30" style="flex:1;padding:0.5rem;background:rgba(0,0,0,0.3);border:1px solid #475569;border-radius:0.5rem;color:white;font-size:0.875rem">
+                            <button type="button" class="btn-preview" id="previewSliderBtn" data-play-key="slider"
+                                    data-label-play="▶ Прослушать" data-label-pause="⏸ Остановить"
+                                    style="padding:0.5rem 0.75rem;font-size:0.875rem">▶ Прослушать</button>
+                            <button type="button" class="btn-ghost" id="addMarkerBtn"
+                                    style="padding:0.5rem 1rem;font-size:0.875rem">+ Добавить</button>
+                        </div>
+                    </div>
+                    
+                    <p id="customSegmentCount" style="margin-bottom:1rem;color:#d8b4fe">Сегментов: 0</p>
+                    
+                    <div id="timelineContainer" class="timeline" style="display:none">
+                        <div class="timeline-bar" id="timelineBar"></div>
+                        <div class="timeline-segments" id="timelineSegments"></div>
+                        <div class="timeline-info">
+                            <span>00:00</span>
+                            <span id="timelineDuration">00:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-main" id="splitBtn">✂️ Обрезать аудио</button>
+            </div>
+
+            <div id="resultsSection" class="card hidden">
+                <h3 id="resultsTitle">✅ Результат: 0 сегментов</h3>
+                <div id="segmentsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script>
+(() => {
+    'use strict';
+
+    /* ------------------------------------------------------------------ утилиты */
+
+    const $ = (id) => document.getElementById(id);
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+    const MAX_ROWS = 200;                                   // строк в результатах до кнопки «Показать все»
+    const SEEK_STEP = 5;                                    // шаг перемотки, сек
+    const BIG_FILE_BYTES = 300 * 1024 * 1024;               // порог, когда спрашиваем про память
+    const HEAVY_BUFFER_BYTES = 300 * 1024 * 1024;           // порог предупреждения после декодирования
+    const MAX_SEGMENTS = 5000;
+
+    function formatTime(seconds) {
+        const total = Math.max(0, Math.floor(Number(seconds) || 0));
+        const h = Math.floor(total / 3600);
+        const m = Math.floor((total % 3600) / 60);
+        const s = total % 60;
+        return h > 0 ? `${h}:${pad2(m)}:${pad2(s)}` : `${pad2(m)}:${pad2(s)}`;
+    }
+
+    // Для длительностей: не показываем «00:00» у ненулевого фрагмента
+    function formatSpan(seconds) {
+        const value = Number(seconds) || 0;
+        if (value > 0 && value < 1) return `${value.toFixed(1)} с`;
+        return formatTime(value);
+    }
+
+    function plural(n, one, few, many) {
+        const mod10 = n % 10;
+        const mod100 = n % 100;
+        if (mod10 === 1 && mod100 !== 11) return one;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+        return many;
+    }
+
+    // Имя используется как имя файла и как текст в разметке — чистим от служебных символов
+    function safeName(name) {
+        const cleaned = String(name || '')
+            .replace(/\.[^./\\]+$/, '')
+            .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 80);
+        return cleaned || 'audio';
+    }
+
+    // «45», «1:30», «1:02:03», «1,5» → секунды; null, если разобрать не удалось
+    function parseTimeInput(raw) {
+        const text = String(raw || '').trim().replace(',', '.');
+        if (!text) return null;
+        const parts = text.split(':');
+        if (parts.length > 3 || parts.some((part) => part.trim() === '')) return null;
+        let seconds = 0;
+        for (const part of parts) {
+            const value = Number(part.trim());
+            if (!Number.isFinite(value) || value < 0) return null;
+            seconds = seconds * 60 + value;
+        }
+        return seconds > 0 ? seconds : null;
+    }
+
+    function isLittleEndian() {
+        return new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+    }
+
+    function writeAscii(view, offset, text) {
+        for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+    }
+
+    /* ---------------------------------------------------------------- элементы */
+
+    const el = {
+        uploadArea: $('uploadArea'),
+        fileInput: $('fileInput'),
+        uploadSection: $('uploadSection'),
+        mainSection: $('mainSection'),
+        fileName: $('fileName'),
+        fileDuration: $('fileDuration'),
+        fileSampleRate: $('fileSampleRate'),
+        fileChannels: $('fileChannels'),
+        reloadBtn: $('reloadBtn'),
+        modeRadios: document.querySelectorAll('input[name="mode"]'),
+        equalMode: $('equalMode'),
+        customMode: $('customMode'),
+        durationInput: $('durationInput'),
+        unitSelect: $('unitSelect'),
+        segmentCount: $('segmentCount'),
+        markersList: $('markersList'),
+        durationSlider: $('durationSlider'),
+        sliderMaxLabel: $('sliderMax'),
+        sliderValue: $('sliderValue'),
+        markerInput: $('markerInput'),
+        previewSliderBtn: $('previewSliderBtn'),
+        addMarkerBtn: $('addMarkerBtn'),
+        customSegmentCount: $('customSegmentCount'),
+        timelineContainer: $('timelineContainer'),
+        timelineBar: $('timelineBar'),
+        timelineSegments: $('timelineSegments'),
+        timelineDuration: $('timelineDuration'),
+        splitBtn: $('splitBtn'),
+        resultsSection: $('resultsSection'),
+        resultsTitle: $('resultsTitle'),
+        segmentsList: $('segmentsList'),
+        toast: $('toast'),
+    };
+
+    /* ------------------------------------------------------------ состояние */
+
+    const state = {
+        name: '',
+        buffer: null,
+        markers: [],      // длительности фрагментов в порядке ввода
+        segments: [],     // { name, start, end }
+        showAll: false,
+        loading: false,
+    };
+
+    // Единственный проигрыватель на всё приложение.
+    // key — владелец воспроизведения: "segment:3", "marker:2", "slider".
+    const player = {
+        ctx: null,
+        source: null,
+        buffer: null,
+        token: 0,
+        key: null,
+        start: 0,
+        end: 0,
+        offset: 0,
+        startedAt: 0,
+        paused: false,
+        raf: 0,
+    };
+
+    let contextCount = 0;
+
+    /* --------------------------------------------------------------- сообщения */
+
+    let toastTimer = 0;
+
+    function notify(message, type = 'info', duration = 4000) {
+        const box = el.toast;
+        if (!box) {
+            console[type === 'error' ? 'error' : 'log'](message);
+            return;
+        }
+        clearTimeout(toastTimer);
+        box.textContent = message;
+        box.className = `toast toast--${type}`;
+        box.hidden = false;
+        if (duration > 0) toastTimer = setTimeout(() => { box.hidden = true; }, duration);
+    }
+
+    function hideToast() {
+        clearTimeout(toastTimer);
+        if (el.toast) el.toast.hidden = true;
+    }
+
+    /* ----------------------------------------------------------------- аудио */
+
+    function getContext() {
+        if (!player.ctx || player.ctx.state === 'closed') {
+            const Ctor = window.AudioContext || window.webkitAudioContext;
+            if (!Ctor) throw new Error('Web Audio API недоступен');
+            player.ctx = new Ctor();
+            contextCount += 1;
+        }
+        return player.ctx;
+    }
+
+    async function ensureRunning() {
+        const ctx = getContext();
+        if (ctx.state === 'suspended') {
+            try { await ctx.resume(); } catch (error) { console.warn('resume() не удался', error); }
+        }
+        return ctx;
+    }
+
+    function decodeAudio(ctx, data) {
+        return new Promise((resolve, reject) => {
+            let settled = false;
+            const ok = (buffer) => { if (!settled) { settled = true; resolve(buffer); } };
+            const fail = (error) => { if (!settled) { settled = true; reject(error); } };
+            try {
+                const maybePromise = ctx.decodeAudioData(data, ok, fail);
+                if (maybePromise && typeof maybePromise.then === 'function') maybePromise.then(ok, fail);
+            } catch (error) {
+                fail(error);
+            }
+        });
+    }
+
+    // Копия участка буфера: одна функция вместо четырёх одинаковых циклов
+    function sliceBuffer(source, start, end, ctx) {
+        const rate = source.sampleRate;
+        const s0 = clamp(Math.floor(start * rate), 0, source.length);
+        const s1 = clamp(Math.floor(end * rate), s0, source.length);
+        const frames = s1 - s0;
+        if (frames <= 0) return null;
+        const out = ctx.createBuffer(source.numberOfChannels, frames, rate);
+        for (let channel = 0; channel < source.numberOfChannels; channel++) {
+            out.copyToChannel(source.getChannelData(channel).subarray(s0, s1), channel);
+        }
+        return out;
+    }
+
+    /* ------------------------------------------------------- воспроизведение */
+
+    function activeTime() {
+        if (!player.ctx || !player.source) return player.offset;
+        return clamp(player.offset + (player.ctx.currentTime - player.startedAt), 0, player.end - player.start);
+    }
+
+    function disposeSource() {
+        player.token += 1;                 // все висящие onended становятся недействительными
+        if (player.source) {
+            player.source.onended = null;
+            try { player.source.stop(); } catch (error) { /* уже остановлен */ }
+            try { player.source.disconnect(); } catch (error) { /* уже отключён */ }
+            player.source = null;
+        }
+    }
+
+    function cancelTick() {
+        if (player.raf) {
+            cancelAnimationFrame(player.raf);
+            player.raf = 0;
+        }
+    }
+
+    function resolveKey(key) {
+        if (!state.buffer || !key) return null;
+        const total = state.buffer.duration;
+
+        if (key.startsWith('segment:')) {
+            const segment = state.segments[Number(key.slice('segment:'.length))];
+            return segment ? { start: segment.start, end: segment.end } : null;
+        }
+
+        if (key.startsWith('marker:')) {
+            const index = Number(key.slice('marker:'.length));
+            let start = 0;
+            for (let i = 0; i < Math.min(index, state.markers.length); i++) start += state.markers[i];
+            if (index < state.markers.length) {
+                return { start, end: Math.min(start + state.markers[index], total) };
+            }
+            return { start, end: total };
+        }
+
+        if (key === 'slider') {
+            let start = 0;
+            for (const marker of state.markers) start += marker;
+            const length = Number(el.durationSlider.value) || 0;
+            return { start, end: Math.min(start + length, total) };
+        }
+
+        return null;
+    }
+
+    async function playRange(start, end, key, offset = 0) {
+        if (!state.buffer) return;
+        const duration = end - start;
+        if (duration <= 0.001) {
+            notify('Фрагмент пустой — нечего воспроизводить', 'error');
+            return;
+        }
+
+        let ctx;
+        try {
+            ctx = await ensureRunning();
+        } catch (error) {
+            console.error(error);
+            notify('Браузер не дал доступ к аудиоустройству', 'error');
+            return;
+        }
+
+        if (!player.buffer || player.key !== key || player.start !== start || player.end !== end) {
+            player.buffer = sliceBuffer(state.buffer, start, end, ctx);
+        }
+        const buffer = player.buffer;
+        if (!buffer) {
+            notify('Не удалось подготовить фрагмент', 'error');
+            return;
+        }
+
+        disposeSource();
+        const token = ++player.token;
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+
+        player.key = key;
+        player.start = start;
+        player.end = end;
+        player.offset = clamp(offset, 0, Math.max(0, duration - 0.001));
+        player.startedAt = ctx.currentTime;
+        player.paused = false;
+        player.source = source;
+
+        // Проверяем, что завершился именно этот источник: иначе перемотка
+        // убивала бы только что запущенное воспроизведение
+        source.onended = () => {
+            if (token !== player.token || player.source !== source) return;
+            player.source = null;
+            player.paused = true;
+            player.offset = duration;
+            cancelTick();
+            paintProgress();
+            paintTransport();
+            player.offset = 0;         // следующий запуск — с начала
+        };
+
+        try {
+            source.start(0, player.offset);
+        } catch (error) {
+            console.warn('start(offset) отклонён, играем с начала', error);
+            source.start(0);
+            player.offset = 0;
+        }
+
+        paintTransport();
+        paintProgress();
+        cancelTick();
+        player.raf = requestAnimationFrame(tick);
+    }
+
+    function tick() {
+        if (!player.source || player.paused) return;
+        paintProgress();
+        if (activeTime() < player.end - player.start - 0.01) {
+            player.raf = requestAnimationFrame(tick);
+        }
+    }
+
+    function pausePlayback() {
+        if (!player.source) return;
+        player.offset = activeTime();
+        disposeSource();
+        cancelTick();
+        player.paused = true;
+        paintTransport();
+        paintProgress();
+    }
+
+    function stopPlayback() {
+        disposeSource();
+        cancelTick();
+        player.key = null;
+        player.buffer = null;
+        player.start = 0;
+        player.end = 0;
+        player.offset = 0;
+        player.paused = false;
+        paintTransport();
+        resetProgressUi();
+    }
+
+    function cue(key, time) {
+        const range = resolveKey(key);
+        if (!range) return;
+        disposeSource();
+        cancelTick();
+        if (player.key !== key || player.start !== range.start || player.end !== range.end) {
+            player.buffer = null;
+        }
+        player.key = key;
+        player.start = range.start;
+        player.end = range.end;
+        player.paused = true;
+        player.offset = clamp(time, 0, Math.max(0, range.end - range.start));
+        paintTransport();
+        paintProgress();
+    }
+
+    function togglePlayback(key) {
+        if (!state.buffer) return;
+        if (player.key === key) {
+            if (player.source && !player.paused) pausePlayback();
+            else playRange(player.start, player.end, key, player.offset);
+            return;
+        }
+        const range = resolveKey(key);
+        if (!range) return;
+        playRange(range.start, range.end, key, 0);
+    }
+
+    // Кнопки ⏪/⏩: на неактивном фрагменте начинаем играть с нужной точки
+    function seekSegment(index, delta) {
+        const segment = state.segments[index];
+        if (!segment) return;
+        const key = `segment:${index}`;
+        const duration = segment.end - segment.start;
+        const base = player.key === key ? activeTime() : 0;
+        playRange(segment.start, segment.end, key, clamp(base + delta, 0, duration));
+    }
+
+    /* ------------------------------------------------------------ отрисовка */
+
+    function paintTransport() {
+        document.querySelectorAll('[data-play-key]').forEach((button) => {
+            const active = button.dataset.playKey === player.key;
+            const playing = active && !!player.source && !player.paused;
+            button.classList.toggle('playing', playing);
+            button.setAttribute('aria-pressed', String(playing));
+            const label = playing
+                ? (button.dataset.labelPause || '⏸ Пауза')
+                : (button.dataset.labelPlay || '▶ Воспроизвести');
+            if (button.textContent !== label) button.textContent = label;
+        });
+    }
+
+    function segmentIndexOfKey() {
+        if (!player.key || !player.key.startsWith('segment:')) return -1;
+        return Number(player.key.slice('segment:'.length));
+    }
+
+    function paintProgress() {
+        const index = segmentIndexOfKey();
+        if (index < 0) return;
+        const segment = state.segments[index];
+        if (!segment) return;
+
+        const duration = segment.end - segment.start;
+        const time = player.paused || !player.source ? player.offset : Math.min(activeTime(), duration);
+        const percent = duration > 0 ? clamp((time / duration) * 100, 0, 100) : 0;
+
+        const fill = el.segmentsList.querySelector(`[data-fill="${index}"]`);
+        const label = el.segmentsList.querySelector(`[data-time="${index}"]`);
+        const bar = el.segmentsList.querySelector(`.progress-bar[data-index="${index}"]`);
+
+        if (fill) fill.style.width = `${percent.toFixed(2)}%`;
+        if (label) label.textContent = `${formatTime(time)} / ${formatSpan(duration)}`;
+        if (bar) {
+            bar.setAttribute('aria-valuenow', time.toFixed(1));
+            bar.setAttribute('aria-valuetext', `${formatTime(time)} из ${formatSpan(duration)}`);
+        }
+    }
+
+    function resetProgressUi() {
+        el.segmentsList.querySelectorAll('[data-fill]').forEach((fill) => { fill.style.width = '0%'; });
+        el.segmentsList.querySelectorAll('[data-time]').forEach((label) => {
+            const index = Number(label.dataset.time);
+            const segment = state.segments[index];
+            label.textContent = `${formatTime(0)} / ${formatSpan(segment ? segment.end - segment.start : 0)}`;
+        });
+        el.segmentsList.querySelectorAll('.progress-bar').forEach((bar) => {
+            bar.setAttribute('aria-valuenow', '0');
+        });
+    }
+
+    function segmentRow(segment, index) {
+        const key = `segment:${index}`;
+        const row = document.createElement('div');
+        row.className = 'segment-item';
+        row.innerHTML = `
+            <div class="segment-head">
+                <div>
+                    <div class="segment-name"></div>
+                    <div class="segment-meta"></div>
+                </div>
+                <button type="button" class="btn-download" data-action="download" data-index="${index}">💾 WAV</button>
+            </div>
+            <div class="player">
+                <div class="player-controls">
+                    <button type="button" class="btn-rewind" data-action="rewind" data-index="${index}">⏪ 5с</button>
+                    <button type="button" class="btn-play" data-action="play" data-play-key="${key}"
+                            data-label-play="▶ Воспроизвести" data-label-pause="⏸ Пауза">▶ Воспроизвести</button>
+                    <button type="button" class="btn-forward" data-action="forward" data-index="${index}">5с ⏩</button>
+                </div>
+                <div class="progress-container">
+                    <span class="time-display" data-time="${index}"></span>
+                    <div class="progress-bar" data-index="${index}" role="slider" tabindex="0"
+                         aria-label="Позиция в сегменте ${index + 1}" aria-valuemin="0"
+                         aria-valuemax="${(segment.end - segment.start).toFixed(1)}" aria-valuenow="0">
+                        <div class="progress-fill" data-fill="${index}"></div>
+                    </div>
+                </div>
+            </div>`;
+
+        // Имя файла приходит от пользователя — только текстом, без innerHTML
+        row.querySelector('.segment-name').textContent = segment.name;
+        row.querySelector('.segment-meta').textContent =
+            `${formatTime(segment.start)} → ${formatTime(segment.end)} • ${formatSpan(segment.end - segment.start)}`;
+        row.querySelector('.time-display').textContent = `${formatTime(0)} / ${formatSpan(segment.end - segment.start)}`;
+        return row;
+    }
+
+    function renderSegments() {
+        const total = state.segments.length;
+        el.resultsSection.classList.remove('hidden');
+        el.resultsTitle.textContent = `✅ Результат: ${total} ${plural(total, 'сегмент', 'сегмента', 'сегментов')}`;
+
+        const list = el.segmentsList;
+        list.textContent = '';
+
+        const visible = state.showAll ? total : Math.min(total, MAX_ROWS);
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < visible; i++) fragment.appendChild(segmentRow(state.segments[i], i));
+
+        if (visible < total) {
+            const note = document.createElement('div');
+            note.className = 'segments-note';
+            note.textContent = `Показаны первые ${visible} из ${total}. `;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn-ghost';
+            button.dataset.action = 'show-all';
+            button.textContent = 'Показать все';
+            note.appendChild(button);
+            fragment.appendChild(note);
+        }
+
+        list.appendChild(fragment);
+        paintTransport();
+        resetProgressUi();
+        if (player.key) paintProgress();
+    }
+
+    function markerRow(marker) {
+        const row = document.createElement('div');
+        row.className = 'marker-item';
+        row.innerHTML = `
+            <div class="marker-info">
+                <span class="marker-label"></span>
+                <button type="button" class="btn-preview" data-action="preview" data-play-key="${marker.key}"
+                        data-label-play="▶" data-label-pause="⏸">▶</button>
+            </div>
+            ${marker.removable
+                ? `<button type="button" class="btn-remove" data-action="remove-marker" data-index="${marker.index}"
+                           aria-label="Удалить метку ${marker.index + 1}">✕</button>`
+                : ''}`;
+        row.querySelector('.marker-label').textContent =
+            `${marker.label} (длительность: ${marker.length})`;
+        return row;
+    }
+
+    function renderMarkers() {
+        const list = el.markersList;
+        list.textContent = '';
+
+        const total = state.buffer ? state.buffer.duration : 0;
+        let cumulative = 0;
+
+        if (!state.markers.length) {
+            const empty = document.createElement('p');
+            empty.className = 'hint';
+            empty.textContent = 'Метки не добавлены';
+            list.appendChild(empty);
+        } else {
+            const fragment = document.createDocumentFragment();
+            state.markers.forEach((duration, index) => {
+                const start = cumulative;
+                cumulative += duration;
+                fragment.appendChild(markerRow({
+                    index,
+                    key: `marker:${index}`,
+                    label: `${index + 1}. ${formatTime(start)} → ${formatTime(cumulative)}`,
+                    length: formatSpan(duration),
+                    removable: true,
+                }));
+            });
+            if (cumulative < total - 0.001) {
+                fragment.appendChild(markerRow({
+                    index: state.markers.length,
+                    key: `marker:${state.markers.length}`,
+                    label: `${state.markers.length + 1}. ${formatTime(cumulative)} → ${formatTime(total)}`,
+                    length: formatSpan(total - cumulative),
+                    removable: false,
+                }));
+            }
+            list.appendChild(fragment);
+        }
+
+        const count = state.markers.length + (cumulative < total - 0.001 ? 1 : 0);
+        el.customSegmentCount.textContent = `Сегментов: ${count}`;
+        renderTimeline();
+        syncSliderBounds();
+        paintTransport();
+    }
+
+    function renderTimeline() {
+        const total = state.buffer ? state.buffer.duration : 0;
+        if (!total || !state.markers.length) {
+            el.timelineContainer.style.display = 'none';
+            return;
+        }
+
+        el.timelineContainer.style.display = 'block';
+        el.timelineDuration.textContent = formatTime(total);
+        el.timelineBar.textContent = '';
+        el.timelineSegments.textContent = '';
+
+        const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'];
+        let cumulative = 0;
+        const boundaries = [0];
+        for (const marker of state.markers) {
+            cumulative += marker;
+            boundaries.push(cumulative);
+        }
+
+        const appendSegment = (start, end, order) => {
+            const length = end - start;
+            if (length <= 0) return;
+            const percent = clamp((length / total) * 100, 0, 100);
+            const div = document.createElement('div');
+            div.className = 'timeline-segment';
+            div.style.width = `${percent.toFixed(3)}%`;
+            div.style.background = colors[order % colors.length];
+            div.textContent = percent > 10 ? formatSpan(length) : '';
+            div.title = `Сегмент ${order + 1}: ${formatTime(start)} → ${formatTime(end)} (${formatSpan(length)})`;
+            el.timelineSegments.appendChild(div);
+        };
+
+        for (let i = 0; i < state.markers.length; i++) {
+            appendSegment(boundaries[i], Math.min(boundaries[i + 1], total), i);
+        }
+        if (cumulative < total) appendSegment(cumulative, total, state.markers.length);
+
+        for (let i = 1; i < boundaries.length; i++) {
+            if (boundaries[i] >= total) break;
+            const percent = clamp((boundaries[i] / total) * 100, 0, 100);
+            const marker = document.createElement('div');
+            marker.className = 'timeline-marker';
+            marker.style.left = `${percent.toFixed(3)}%`;
+            marker.title = `Граница ${i}: ${formatTime(boundaries[i])}`;
+            const label = document.createElement('div');
+            label.className = 'timeline-marker-label';
+            label.textContent = String(i);
+            marker.appendChild(label);
+            el.timelineBar.appendChild(marker);
+        }
+    }
+
+    /* ------------------------------------------------------- режим «равные» */
+
+    function currentMode() {
+        const checked = document.querySelector('input[name="mode"]:checked');
+        return checked ? checked.value : 'equal';
+    }
+
+    function readStepSeconds() {
+        const raw = Number(String(el.durationInput.value).replace(',', '.'));
+        if (!Number.isFinite(raw) || raw <= 0) return 0;
+        return el.unitSelect.value === 'minutes' ? raw * 60 : raw;
+    }
+
+    function updateSegmentCount() {
+        if (!state.buffer) {
+            el.segmentCount.textContent = 'Сегментов: —';
+            return;
+        }
+        const step = readStepSeconds();
+        if (!(step > 0)) {
+            el.segmentCount.textContent = 'Сегментов: — укажите длительность больше 0';
+            return;
+        }
+        const count = Math.max(1, Math.ceil(state.buffer.duration / step));
+        el.segmentCount.textContent =
+            `Сегментов: ${count}${count > 500 ? ' · список свернётся' : ''}`;
+    }
+
+    /* ----------------------------------------------------------- ползунок */
+
+    function updateSliderLabel() {
+        const value = Number(el.durationSlider.value) || 0;
+        el.sliderValue.textContent = formatTime(value);
+    }
+
+    function syncSliderBounds() {
+        if (!state.buffer) return;
+        const used = state.markers.reduce((sum, value) => sum + value, 0);
+        const remaining = Math.max(0, state.buffer.duration - used);
+        const max = Math.max(1, Math.floor(remaining));
+
+        const slider = el.durationSlider;
+        slider.max = String(max);
+        const value = clamp(Math.round(Number(slider.value) || 1), 1, max);
+        slider.value = String(value);
+
+        el.sliderMaxLabel.textContent = formatSpan(max);
+        updateSliderLabel();
+        el.addMarkerBtn.disabled = remaining < 1;
+        el.previewSliderBtn.disabled = remaining <= 0.05;
+        el.markerInput.placeholder = `или введите: 30 или 1:30 (макс ${formatSpan(max)})`;
+    }
+
+    /* ------------------------------------------------------------- метки */
+
+    function addMarker() {
+        if (!state.buffer) return;
+
+        const total = state.buffer.duration;
+        const used = state.markers.reduce((sum, value) => sum + value, 0);
+        const remaining = total - used;
+        if (remaining <= 0.01) {
+            notify('Файл уже разбит до конца', 'info');
+            return;
+        }
+
+        const typed = el.markerInput.value.trim();
+        let value;
+        if (typed) {
+            value = parseTimeInput(typed);
+            if (value === null) {
+                notify('Не понял длительность. Примеры: 45, 1:30, 1:02:03', 'error');
+                return;
+            }
+        } else {
+            value = Number(el.durationSlider.value);
+        }
+
+        if (!(value > 0)) {
+            notify('Длительность должна быть больше 0', 'error');
+            return;
+        }
+        if (value > remaining + 0.01) {
+            notify(`До конца файла осталось ${formatSpan(remaining)} — уменьшите длительность`, 'error');
+            return;
+        }
+
+        state.markers.push(value);
+        state.segments = [];
+        state.showAll = false;
+        el.resultsSection.classList.add('hidden');
+        el.markerInput.value = '';
+        if (player.key && player.key.startsWith('marker:')) stopPlayback();
+        renderMarkers();
+        updateSegmentCount();
+    }
+
+    function removeMarker(index) {
+        if (!state.markers[index] && state.markers[index] !== 0) return;
+        state.markers.splice(index, 1);
+        state.segments = [];
+        state.showAll = false;
+        el.resultsSection.classList.add('hidden');
+        stopPlayback();
+        renderMarkers();
+        updateSegmentCount();
+    }
+
+    /* ------------------------------------------------------------- нарезка */
+
+    function partName(index) {
+        return `${state.name}_part${String(index).padStart(3, '0')}.wav`;
+    }
+
+    function buildSegments() {
+        const buffer = state.buffer;
+        if (!buffer) return null;
+        const total = buffer.duration;
+        const result = [];
+
+        if (currentMode() === 'equal') {
+            const step = readStepSeconds();
+            if (!(step > 0)) {
+                notify('Укажите длительность сегмента больше 0', 'error');
+                return null;
+            }
+            const count = Math.max(1, Math.ceil(total / step));
+            if (count > MAX_SEGMENTS) {
+                notify(`Получится ${count} сегментов — увеличьте длительность`, 'error');
+                return null;
+            }
+            for (let i = 0; i < count; i++) {
+                const start = Math.min(i * step, total);
+                const end = Math.min((i + 1) * step, total);
+                if (end - start <= 0.001) break;
+                result.push({ name: partName(i + 1), start, end });
+            }
+        } else {
+            if (!state.markers.length) {
+                notify('Добавьте хотя бы одну метку', 'error');
+                return null;
+            }
+            // Порядок ввода = порядок фрагментов. Сортировать длительности нельзя:
+            // это переставит куски местами относительно таймлайна и предпросмотра.
+            let cursor = 0;
+            for (let i = 0; i < state.markers.length; i++) {
+                const start = cursor;
+                const end = Math.min(cursor + state.markers[i], total);
+                if (end - start <= 0.001) break;
+                result.push({ name: partName(i + 1), start, end });
+                cursor = end;
+            }
+            if (total - cursor > 0.001) {
+                result.push({ name: partName(result.length + 1), start: cursor, end: total });
+            }
+        }
+
+        if (!result.length) {
+            notify('Не получилось ни одного сегмента — проверьте настройки', 'error');
+            return null;
+        }
+        return result;
+    }
+
+    /* --------------------------------------------------------------- экспорт */
+
+    function encodeWav(buffer, start, end) {
+        const channels = buffer.numberOfChannels;
+        const rate = buffer.sampleRate;
+        const s0 = clamp(Math.floor(start * rate), 0, buffer.length);
+        const s1 = clamp(Math.floor(end * rate), s0, buffer.length);
+        const frames = s1 - s0;
+        if (!frames) throw new Error('пустой фрагмент');
+
+        const dataBytes = frames * channels * 2;
+        if (dataBytes > 0xFFFFFFFF - 44) throw new Error('фрагмент слишком велик для WAV');
+
+        const chunk = new ArrayBuffer(44 + dataBytes);
+        const view = new DataView(chunk);
+        writeAscii(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataBytes, true);
+        writeAscii(view, 8, 'WAVE');
+        writeAscii(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);              // размер fmt-блока
+        view.setUint16(20, 1, true);               // PCM
+        view.setUint16(22, channels, true);
+        view.setUint32(24, rate, true);
+        view.setUint32(28, rate * channels * 2, true);
+        view.setUint16(32, channels * 2, true);
+        view.setUint16(34, 16, true);
+        writeAscii(view, 36, 'data');
+        view.setUint32(40, dataBytes, true);
+
+        const pcm = new Int16Array(chunk, 44, frames * channels);
+        let peak = 0;
+        for (let channel = 0; channel < channels; channel++) {
+            const data = buffer.getChannelData(channel);
+            for (let i = 0; i < frames; i++) {
+                const sample = clamp(data[s0 + i], -1, 1);
+                const magnitude = Math.abs(sample);
+                if (magnitude > peak) peak = magnitude;
+                // округление, а не усечение: иначе появляется постоянное смещение
+                pcm[i * channels + channel] = Math.round(sample * 32767);
+            }
+        }
+        if (!isLittleEndian()) {
+            const dv = new DataView(chunk);
+            for (let i = 0; i < pcm.length; i++) dv.setInt16(44 + i * 2, pcm[i], true);
+        }
+
+        return { blob: new Blob([chunk], { type: 'audio/wav' }), peak };
+    }
+
+    function downloadSegment(index) {
+        const segment = state.segments[index];
+        if (!segment || !state.buffer) return;
+        try {
+            const { blob, peak } = encodeWav(state.buffer, segment.start, segment.end);
+            if (peak >= 0.999) notify('Фрагмент на пределе громкости — возможен клиппинг', 'warn', 3000);
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = segment.name;
+            link.rel = 'noopener';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            // отзываем не сразу: Safari не успевает начать скачивание
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+        } catch (error) {
+            console.error(error);
+            notify(`Не удалось сохранить фрагмент: ${error.message}`, 'error', 6000);
+        }
+    }
+
+    /* ------------------------------------------------------------ файл */
+
+    function resetAll() {
+        stopPlayback();
+        state.markers = [];
+        state.segments = [];
+        state.showAll = false;
+        el.markersList.textContent = '';
+        el.segmentsList.textContent = '';
+        el.timelineBar.textContent = '';
+        el.timelineSegments.textContent = '';
+        el.timelineContainer.style.display = 'none';
+        el.resultsSection.classList.add('hidden');
+        el.customSegmentCount.textContent = 'Сегментов: 0';
+    }
+
+    function showMain() {
+        const buffer = state.buffer;
+        el.uploadSection.classList.add('hidden');
+        el.mainSection.classList.remove('hidden');
+
+        el.fileName.textContent = `🎶 ${state.name}`;
+        el.fileDuration.textContent = `⏱ ${formatTime(buffer.duration)}`;
+        el.fileSampleRate.textContent = `📊 ${buffer.sampleRate} Гц`;
+        el.fileChannels.textContent = `🔊 ${buffer.numberOfChannels === 1 ? 'Моно'
+            : buffer.numberOfChannels === 2 ? 'Стерео' : `${buffer.numberOfChannels} канала`}`;
+
+        el.durationSlider.value = String(Math.min(30, Math.max(1, Math.floor(buffer.duration))));
+        renderMarkers();
+        updateSegmentCount();
+        renderTimeline();
+    }
+
+    function showUpload() {
+        el.mainSection.classList.add('hidden');
+        el.uploadSection.classList.remove('hidden');
+        el.fileInput.value = '';
+        el.uploadArea.focus();
+    }
+
+    async function loadFile(file) {
+        if (!file || state.loading) return;
+
+        const looksAudio = /^audio\//.test(file.type)
+            || /\.(mp3|wav|ogg|oga|opus|m4a|aac|flac|weba|webm)$/i.test(file.name);
+        if (!looksAudio) {
+            notify('Это не похоже на аудиофайл', 'error');
+            return;
+        }
+        if (file.size > BIG_FILE_BYTES
+            && !window.confirm(`Файл ${(file.size / 1048576).toFixed(0)} МБ. Он будет целиком расшифрован в память — вкладка может не справиться. Продолжить?`)) {
+            return;
+        }
+
+        state.loading = true;
+        el.splitBtn.disabled = true;
+
+        try {
+            notify('Декодирование…', 'info', 0);
+            const bytes = await file.arrayBuffer();
+            const ctx = getContext();
+            const buffer = await decodeAudio(ctx, bytes);
+            if (!buffer || !buffer.length) throw new Error('пустой буфер');
+
+            resetAll();
+            state.buffer = buffer;
+            state.name = safeName(file.name);
+            showMain();
+            el.fileInput.value = '';
+
+            const megabytes = (buffer.length * buffer.numberOfChannels * 4) / 1048576;
+            notify(`Готово: ${formatTime(buffer.duration)}, ${buffer.sampleRate} Гц`, 'ok', 3000);
+            if (megabytes > HEAVY_BUFFER_BYTES / 1048576) {
+                notify(`Файл занимает ~${Math.round(megabytes)} МБ памяти — экспорт может быть медленным`, 'warn', 8000);
+            }
+        } catch (error) {
+            console.error(error);
+            hideToast();
+            notify('Не удалось декодировать файл: формат не поддерживается этим браузером', 'error', 7000);
+        } finally {
+            state.loading = false;
+            el.splitBtn.disabled = false;
+        }
+    }
+
+    /* ----------------------------------------------------------- события */
+
+    function bindEvents() {
+        // загрузка
+        el.uploadArea.addEventListener('click', () => el.fileInput.click());
+        el.uploadArea.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                el.fileInput.click();
+            }
+        });
+        el.fileInput.addEventListener('change', (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (file) loadFile(file);
+        });
+
+        ['dragenter', 'dragover'].forEach((type) => {
+            el.uploadArea.addEventListener(type, (event) => {
+                event.preventDefault();
+                el.uploadArea.classList.add('dragover');
+            });
+        });
+        ['dragleave', 'dragend'].forEach((type) => {
+            el.uploadArea.addEventListener(type, () => el.uploadArea.classList.remove('dragover'));
+        });
+
+        // бросок файла в любом месте страницы: иначе браузер уходит на файл
+        ['dragenter', 'dragover'].forEach((type) => {
+            document.addEventListener(type, (event) => event.preventDefault());
+        });
+        document.addEventListener('drop', (event) => {
+            event.preventDefault();
+            el.uploadArea.classList.remove('dragover');
+            const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+            if (file) loadFile(file);
+        });
+
+        el.reloadBtn.addEventListener('click', () => {
+            resetAll();
+            state.buffer = null;
+            state.name = '';
+            showUpload();
+            if (player.ctx && player.ctx.state === 'running') {
+                player.ctx.suspend().catch(() => {});
+            }
+        });
+
+        // режим
+        el.modeRadios.forEach((radio) => {
+            radio.addEventListener('change', () => {
+                const mode = currentMode();
+                el.equalMode.classList.toggle('hidden', mode !== 'equal');
+                el.customMode.classList.toggle('hidden', mode !== 'custom');
+                // старый результат относится к другим настройкам
+                state.segments = [];
+                state.showAll = false;
+                el.resultsSection.classList.add('hidden');
+                stopPlayback();
+            });
+        });
+
+        // равные сегменты
+        el.durationInput.addEventListener('input', updateSegmentCount);
+        el.unitSelect.addEventListener('change', updateSegmentCount);
+
+        // метки
+        el.durationSlider.addEventListener('input', updateSliderLabel);
+        el.markerInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addMarker();
+            }
+        });
+        el.addMarkerBtn.addEventListener('click', addMarker);
+
+        el.markersList.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-action]');
+            if (!button) return;
+            if (button.dataset.action === 'preview') togglePlayback(button.dataset.playKey);
+            else if (button.dataset.action === 'remove-marker') removeMarker(Number(button.dataset.index));
+        });
+
+        el.previewSliderBtn.addEventListener('click', () => togglePlayback('slider'));
+
+        // нарезка
+        el.splitBtn.addEventListener('click', () => {
+            if (!state.buffer) return;
+            const built = buildSegments();
+            if (!built) return;
+            state.segments = built;
+            state.showAll = false;
+            stopPlayback();
+            renderSegments();
+            el.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+
+        // список результатов — одно делегированное событие вместо сотен слушателей
+        el.segmentsList.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-action]');
+            if (!button) return;
+            const action = button.dataset.action;
+            if (action === 'show-all') {
+                state.showAll = true;
+                renderSegments();
+            } else if (action === 'play') {
+                togglePlayback(button.dataset.playKey);
+            } else if (action === 'download') {
+                downloadSegment(Number(button.dataset.index));
+            } else if (action === 'rewind' || action === 'forward') {
+                seekSegment(Number(button.dataset.index), action === 'rewind' ? -SEEK_STEP : SEEK_STEP);
+            }
+        });
+
+        bindScrubbing();
+        bindProgressKeyboard();
+    }
+
+    // Перетаскивание полосы прогресса: pointerdown/up навешаны один раз
+    let dragBar = null;
+    let dragResume = false;
+
+    function bindScrubbing() {
+        const barToTime = (bar, clientX) => {
+            const segment = state.segments[Number(bar.dataset.index)];
+            if (!segment) return null;
+            const rect = bar.getBoundingClientRect();
+            const ratio = rect.width ? clamp((clientX - rect.left) / rect.width, 0, 1) : 0;
+            return { index: Number(bar.dataset.index), time: ratio * (segment.end - segment.start) };
+        };
+
+        el.segmentsList.addEventListener('pointerdown', (event) => {
+            const bar = event.target.closest('.progress-bar');
+            if (!bar || event.button !== 0) return;
+            const key = `segment:${bar.dataset.index}`;
+            dragBar = bar;
+            dragResume = player.key === key && !!player.source && !player.paused;
+            if (dragResume) {
+                player.offset = activeTime();
+                disposeSource();
+                cancelTick();
+                player.paused = true;
+            }
+            const point = barToTime(bar, event.clientX);
+            if (point) cue(key, point.time);
+            event.preventDefault();
+        });
+
+        document.addEventListener('pointermove', (event) => {
+            if (!dragBar) return;
+            if (!dragBar.isConnected) {
+                dragBar = null;
+                dragResume = false;
+                return;
+            }
+            const point = barToTime(dragBar, event.clientX);
+            if (point) cue(`segment:${point.index}`, point.time);
+        });
+
+        document.addEventListener('pointerup', () => {
+            if (!dragBar) {
+                dragResume = false;
+                return;
+            }
+            const resume = dragResume;
+            dragBar = null;
+            dragResume = false;
+            if (resume && player.key && player.key.startsWith('segment:')) {
+                playRange(player.start, player.end, player.key, player.offset);
+            }
+        });
+
+        document.addEventListener('pointercancel', () => {
+            dragBar = null;
+            dragResume = false;
+        });
+    }
+
+    function bindProgressKeyboard() {
+        el.segmentsList.addEventListener('keydown', (event) => {
+            const bar = event.target.closest('.progress-bar');
+            if (!bar) return;
+            const key = `segment:${bar.dataset.index}`;
+            const segment = state.segments[Number(bar.dataset.index)];
+            if (!segment) return;
+            const duration = segment.end - segment.start;
+            const current = player.key === key ? (player.paused ? player.offset : activeTime()) : 0;
+
+            let target = null;
+            if (event.key === 'ArrowLeft') target = current - SEEK_STEP;
+            else if (event.key === 'ArrowRight') target = current + SEEK_STEP;
+            else if (event.key === 'Home') target = 0;
+            else if (event.key === 'End') target = duration;
+            if (target === null) return;
+
+            event.preventDefault();
+            cue(key, clamp(target, 0, duration));
+        });
+    }
+
+    /* -------------------------------------------------------------- старт */
+
+    updateSliderLabel();
+    bindEvents();
+
+    // Небольшой отладочный доступ: состояние видно из консоли, ничего не ломает
+    window.audioSplitterDebug = {
+        get state() {
+            return {
+                name: state.name,
+                mode: currentMode(),
+                markers: [...state.markers],
+                segments: state.segments.map((segment) => ({ ...segment })),
+                duration: state.buffer ? state.buffer.duration : 0,
+            };
+        },
+        get playback() {
+            return {
+                key: player.key,
+                offset: player.offset,
+                paused: player.paused,
+                playing: !!player.source && !player.paused,
+                contexts: contextCount,
+            };
+        },
+    };
+})();
+    </script>
+
+    <noscript>
+        <p class="container" style="color:#f87171">Для нарезки аудио нужен включённый JavaScript.</p>
+    </noscript>
+</body>
+</html>
