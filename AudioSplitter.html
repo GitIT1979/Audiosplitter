@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AudioSplitter: нарезка трека на отрывки, разделение на дорожки, сэмплы и экспорт в MP3.">
+    <meta name="description" content="AudioSplitter: нарезка трека на фрагменты, разделение на дорожки, сэмплы и экспорт в MP3.">
     <meta name="theme-color" content="#070b16">
     <title>AudioSplitter</title>
     <style>
@@ -252,7 +252,7 @@
         .columns { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 14px; align-items: start; }
         @media (max-width: 1080px) { .columns { grid-template-columns: minmax(0, 1fr); } }
 
-        /* ---------- отрывки ---------- */
+        /* ---------- фрагменты ---------- */
 
         .clips-list { padding: 10px; display: grid; gap: 9px; }
         .empty { padding: 20px 8px; text-align: center; color: var(--dim); font-size: 0.84rem; line-height: 1.6; }
@@ -397,7 +397,7 @@
 <body>
     <div class="app">
         <header class="topbar">
-            <div class="brand"><span class="logo">✂️</span> AudioSplitter <small>отрывки · дорожки · сэмплы</small></div>
+            <div class="brand"><span class="logo">✂️</span> AudioSplitter <small>фрагменты · дорожки · сэмплы</small></div>
             <div class="file-block">
                 <div class="file-name" id="fileName">Файл не выбран</div>
                 <div class="file-meta" id="fileMeta"></div>
@@ -424,7 +424,7 @@
                     <button type="button" class="play-btn" id="playBtn" aria-label="Воспроизвести">▶</button>
                     <button type="button" class="icon-btn" id="stopBtn" aria-label="Стоп" title="Стоп">■</button>
                     <button type="button" class="icon-btn" id="loopBtn" aria-label="Повтор" aria-pressed="false" title="Повторять фрагмент">🔁</button>
-                    <button type="button" class="icon-btn" id="recordBtn" aria-label="Записать с микрофона" title="Записать дорожку с микрофона">●</button>
+                    <button type="button" class="icon-btn" id="recordBtn" aria-label="Записать с микрофона" title="Записать с микрофона">🎤</button>
 
                     <div class="time">
                         <span id="timeNow">00:00.00</span>
@@ -458,7 +458,8 @@
                     <span class="sel-time" id="selText">00:00.00 → 00:00.00</span>
                     <div class="spacer"></div>
                     <button type="button" class="icon-btn" id="selPlay" aria-label="Прослушать выделение" title="Прослушать">▶</button>
-                    <button type="button" class="btn btn-primary small" id="selAdd">+ Отрывок из выделения</button>
+                    <button type="button" class="btn btn-primary small" id="selCut" title="Вырезать выделение в файл">✂ Cut</button>
+                    <button type="button" class="btn btn-ghost small" id="selAdd">+ Фрагмент из выделения</button>
                     <button type="button" class="btn btn-ghost small" id="selClear">Сбросить</button>
                 </div>
             </section>
@@ -466,7 +467,7 @@
             <div class="columns">
                 <section class="card">
                     <div class="card-head">
-                        <h2>Отрывки</h2>
+                        <h2>Фрагменты</h2>
                         <span class="badge" id="clipCount">0</span>
                         <div class="spacer"></div>
                         <label class="fake-select">
@@ -482,7 +483,7 @@
                     <div class="clips-list" id="clips"></div>
 
                     <div class="clips-foot">
-                        <button type="button" class="btn btn-primary" id="addClipBtn" disabled>+ Отрывок из выделения</button>
+                        <button type="button" class="btn btn-primary" id="addClipBtn" disabled>+ Фрагмент из выделения</button>
                         <span class="hint">Начало, конец, длина, фейд и громкость правятся в карточке; края тянутся на волне.</span>
                     </div>
                 </section>
@@ -504,6 +505,7 @@
                         <div class="card-head">
                             <h2>Дорожки</h2>
                             <div class="spacer"></div>
+                            <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
                         <div class="stems" id="stems"></div>
                         <p class="note">
@@ -547,7 +549,8 @@
                         <div class="card-head">
                             <h2>Сэмплы</h2>
                             <div class="spacer"></div>
-                            <button type="button" class="btn btn-ghost small" id="addSampleBtn">+ Добавить</button>
+                            <button type="button" class="btn btn-ghost small" id="sampleRecordBtn" title="Записать звук с микрофона">🎤 Записать</button>
+                            <button type="button" class="btn btn-ghost small" id="addSampleBtn" title="Добавить внешний звук из файла">＋ Добавить</button>
                         </div>
                         <div class="samples" id="samples"></div>
                         <p class="note">Сэмпл звучит с указанной секунды и подмешивается в прослушивание и экспорт. На волне его можно тянуть за плашку с названием.</p>
@@ -956,14 +959,15 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         timeNow: $('timeNow'), timeTotal: $('timeTotal'), volume: $('volume'),
         zoomIn: $('zoomIn'), zoomOut: $('zoomOut'), zoomLabel: $('zoomLabel'), fitBtn: $('fitBtn'),
         waveWrap: $('waveWrap'), wave: $('wave'), waveHint: $('waveHint'),
-        selBar: $('selBar'), selText: $('selText'), selPlay: $('selPlay'), selAdd: $('selAdd'), selClear: $('selClear'),
+        selBar: $('selBar'), selText: $('selText'), selPlay: $('selPlay'), selAdd: $('selAdd'), selCut: $('selCut'), selClear: $('selClear'),
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'),
+        stemsResetBtn: $('stemsResetBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
-        samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'),
+        samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'),
         toast: $('toast'),
     };
 
@@ -1238,7 +1242,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return peak;
     }
 
-    // Главный рендер: отрывок + дорожки + тембр + фейды + сэмплы + скорость.
+    // Главный рендер: фрагмент + дорожки + тембр + фейды + сэмплы + скорость.
     // Прослушивание и экспорт идут через одну функцию, поэтому совпадают.
     function renderRange(start, end, opts = {}) {
         const source = app.buffer;
@@ -1740,7 +1744,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         g.lineTo(w, Math.round(mid) + 0.5);
         g.stroke();
 
-        // подложки отрывков и выделения — под волной
+        // подложки фрагментов и выделения — под волной
         app.clips.forEach((clip, index) => {
             const x1 = timeToX(clip.start);
             const x2 = timeToX(clip.end);
@@ -1770,7 +1774,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             g.fillRect(x, Math.min(y1, y2), 1, Math.max(1, Math.abs(y2 - y1)));
         }
 
-        // контуры отрывков
+        // контуры фрагментов
         app.clips.forEach((clip, index) => {
             const color = PALETTE[index % PALETTE.length];
             const x1 = timeToX(clip.start);
@@ -2009,7 +2013,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     canvas.addEventListener('dblclick', () => { if (app.buffer) zoomTo(1); });
 
-    /* -------------------------------------------------------------- отрывки */
+    /* -------------------------------------------------------------- фрагменты */
 
     function findClip(id) { return app.clips.find((clip) => clip.id === id) || null; }
     function activeClip() { return app.activeClipId ? findClip(app.activeClipId) : null; }
@@ -2038,14 +2042,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         node.innerHTML = `
             <div class="clip-head">
                 <span class="clip-dot" aria-hidden="true"></span>
-                <input class="clip-name" data-field="name" type="text" maxlength="80" aria-label="Название отрывка">
+                <input class="clip-name" data-field="name" type="text" maxlength="80" aria-label="Название фрагмента">
                 <span class="clip-range" data-range></span>
                 <span class="clip-dur" data-dur></span>
                 <div class="clip-buttons">
-                    <button type="button" class="icon-btn" data-act="play" title="Прослушать" aria-label="Прослушать отрывок">▶</button>
-                    <button type="button" class="icon-btn" data-act="dup" title="Дублировать" aria-label="Дублировать отрывок">⧉</button>
-                    <button type="button" class="btn btn-ghost small" data-act="export" title="Сохранить отрывок в выбранном формате" aria-label="Сохранить отрывок">⤓</button>
-                    <button type="button" class="icon-btn" data-act="del" title="Удалить" aria-label="Удалить отрывок">✕</button>
+                    <button type="button" class="icon-btn" data-act="play" title="Прослушать" aria-label="Прослушать фрагмент">▶</button>
+                    <button type="button" class="icon-btn" data-act="dup" title="Дублировать" aria-label="Дублировать фрагмент">⧉</button>
+                    <button type="button" class="btn btn-ghost small" data-act="export" title="Сохранить фрагмент в выбранном формате" aria-label="Сохранить фрагмент">⤓</button>
+                    <button type="button" class="icon-btn" data-act="del" title="Удалить" aria-label="Удалить фрагмент">✕</button>
                 </div>
             </div>
             <div class="clip-fields">
@@ -2081,7 +2085,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.addClipBtn.disabled = !selectionValid() || app.busy;
 
         if (!app.clips.length) {
-            el.clips.innerHTML = '<p class="empty">Пока нет отрывков.<br>Выделите фрагмент на волне и нажмите «Отрывок из выделения».</p>';
+            el.clips.innerHTML = '<p class="empty">Пока нет фрагментов.<br>Выделите фрагмент на волне и нажмите «Фрагмент из выделения».</p>';
             return;
         }
 
@@ -2133,7 +2137,26 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         updateSelectionUi();
         el.waveHint.hidden = true;
         draw();
-        toast(`Отрывок ${clip.name}: ${fmt(clip.end - clip.start)}`, 'ok', 2400);
+        toast(`Фрагмент ${clip.name}: ${fmt(clip.end - clip.start)}`, 'ok', 2400);
+    }
+
+    // Cut: вырезает выделение в отдельный фрагмент и сразу сохраняет его файлом
+    async function cutSelection() {
+        if (!selectionValid()) { toast('Сначала выделите фрагмент на волне', 'error'); return; }
+        if (app.busy) return;
+        const clip = {
+            id: app.nextClipId++,
+            name: nextClipName(),
+            start: Number(app.selection.start.toFixed(3)),
+            end: Number(app.selection.end.toFixed(3)),
+            fade: 0,
+            gain: 0,
+        };
+        app.clips.push(clip);
+        app.activeClipId = clip.id;
+        renderClips();
+        draw();
+        await exportClip(clip);
     }
 
     function selectClip(clip) {
@@ -2165,6 +2188,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     function previewClip(clip) {
         app.activeClipId = clip.id;
         renderClips();
+        playContext = { kind: 'clip', clipId: clip.id };
         playRange(clip.start, clip.end, clipOptions(clip));
     }
 
@@ -2174,7 +2198,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         app.activeClipId = copy.id;
         renderClips();
         draw();
-        toast('Отрывок продублирован', 'ok', 2000);
+        toast('Фрагмент продублирован', 'ok', 2000);
     }
 
     function deleteClip(clip) {
@@ -2184,7 +2208,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (app.activeClipId === clip.id) app.activeClipId = null;
         renderClips();
         draw();
-        toast('Отрывок удалён', 'info', 2000);
+        toast('Фрагмент удалён', 'info', 2000);
     }
 
     function applyClipField(clip, field, value, row) {
@@ -2196,6 +2220,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         else if (field === 'gain') clip.gain = clamp(value, -24, 12);
         syncClipRow(clip, row, field);
         draw();
+        scheduleLive();
     }
 
     /* --------------------------------------------------------------- дорожки */
@@ -2237,6 +2262,53 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             speed: 1,
             samples: false,
         };
+    }
+
+    function resetStems() {
+        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
+        renderStems();
+        scheduleLive();
+    }
+
+    /* --------------------------------------------------- живые настройки */
+
+    // Что сейчас играет: от этого зависит, какие настройки применять при пересборке
+    let playContext = null;
+
+    function optionsForContext() {
+        if (playContext && playContext.kind === 'clip') {
+            const clip = findClip(playContext.clipId);
+            if (clip) return clipOptions(clip);
+        }
+        if (playContext && playContext.kind === 'stem') return stemOptions(playContext.stemId);
+        return soundOptions();
+    }
+
+    let liveTimer = 0;
+    let liveApplying = false;
+    let livePending = false;
+
+    // Настройки меняются на слух: пересобираем звук с текущей позиции
+    function scheduleLive() {
+        if (!player.playing || recorder.active) return;
+        clearTimeout(liveTimer);
+        liveTimer = setTimeout(liveApply, 180);
+    }
+
+    async function liveApply() {
+        if (!player.playing || !player.range) return;
+        if (liveApplying) { livePending = true; return; }
+        liveApplying = true;
+        try {
+            const end = player.range.end;
+            const pos = clamp(currentPosition(), player.range.start, Math.max(player.range.start, end - 0.02));
+            await playRange(pos, end, optionsForContext());
+        } catch (error) {
+            console.error(error);
+        } finally {
+            liveApplying = false;
+            if (livePending) { livePending = false; scheduleLive(); }
+        }
     }
 
     /* --------------------------------------------------------------- сэмплы */
@@ -2298,10 +2370,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
         renderSamples();
         draw();
+        scheduleLive();
         if (added) toast(`Добавлено ${added} ${plural(added, 'сэмпл', 'сэмпла', 'сэмплов')}`, 'ok', 2400);
     }
 
     function previewSample(sample) {
+        playContext = null;
         ensureRunning().then(() => {
             stopPlayback();
             playBuffer(sample.buffer, { start: sample.start, end: sample.start + sample.buffer.duration }, 0, 1);
@@ -2314,7 +2388,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     function recordLabel(on) {
         el.recordBtn.classList.toggle('is-recording', on);
-        el.recordBtn.textContent = on ? '■' : '●';
+        el.recordBtn.textContent = on ? '■' : '🎤';
         el.recordBtn.setAttribute('aria-label', on ? 'Остановить запись' : 'Записать с микрофона');
         el.recordBtn.title = on ? 'Остановить запись' : 'Записать дорожку с микрофона';
     }
@@ -2361,6 +2435,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
         // Сначала готовим и запускаем воспроизведение, и только потом включаем
         // запись: иначе на длинном треке в начало записи попадает пауза рендера
+        playContext = { kind: 'mix' };
         await playRange(recorder.start, app.buffer.duration, { ...soundOptions(), speed: 1 });
         recorder.media.start(250);
         toast('Запись: играет трек, пишется микрофон', 'info', 3000);
@@ -2417,6 +2492,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     function previewMix() {
         if (!app.buffer) return;
         const range = exportRange();
+        playContext = { kind: 'mix' };
         playRange(range.start, range.end, soundOptions());
     }
 
@@ -2676,7 +2752,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         event.target.value = '';
     });
     el.openBtn.addEventListener('click', () => {
-        if ((app.clips.length || app.samples.length) && !window.confirm('Открыть другой файл? Отрывки и сэмплы не сохранятся.')) return;
+        if ((app.clips.length || app.samples.length) && !window.confirm('Открыть другой файл? Фрагменты и сэмплы не сохранятся.')) return;
         el.fileInput.click();
     });
 
@@ -2693,7 +2769,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         event.preventDefault();
         const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
         if (!file) return;
-        if ((app.clips.length || app.samples.length) && !window.confirm('Открыть другой файл? Отрывки и сэмплы не сохранятся.')) return;
+        if ((app.clips.length || app.samples.length) && !window.confirm('Открыть другой файл? Фрагменты и сэмплы не сохранятся.')) return;
         loadFile(file);
     });
 
@@ -2702,6 +2778,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (player.playing) { stopPlayback(); return; }
         const from = clamp(app.playhead, 0, app.buffer.duration);
         const start = from >= app.buffer.duration - 0.01 ? 0 : from;
+        playContext = { kind: 'mix' };
         playRange(start, app.buffer.duration, soundOptions());
     });
 
@@ -2722,6 +2799,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         else startRecording();
     });
 
+    el.sampleRecordBtn.addEventListener('click', () => {
+        if (recorder.active) stopRecording();
+        else startRecording();
+    });
+
     el.volume.addEventListener('input', () => {
         app.volume = Number(el.volume.value);
         if (player.gain) player.gain.gain.value = app.volume;
@@ -2736,9 +2818,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const opts = soundOptions();
         opts.fadeIn = 0;
         opts.fadeOut = 0;
+        playContext = { kind: 'selection' };
         playRange(app.selection.start, app.selection.end, opts);
     });
     el.selAdd.addEventListener('click', addClipFromSelection);
+    el.selCut.addEventListener('click', cutSelection);
+    el.stemsResetBtn.addEventListener('click', resetStems);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
     el.selClear.addEventListener('click', () => {
         app.selection = null;
@@ -2804,6 +2889,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const id = row.dataset.stem;
         app.stemGains[id] = Number(event.target.value) / 100;
         row.querySelector('.stem-val').textContent = `${event.target.value}%`;
+        scheduleLive();
     });
 
     el.stems.addEventListener('click', (event) => {
@@ -2811,6 +2897,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (play) {
             if (!app.buffer) return;
             const range = exportRange();
+            playContext = { kind: 'stem', stemId: play.dataset.stemPlay };
             playRange(range.start, range.end, stemOptions(play.dataset.stemPlay));
             return;
         }
@@ -2829,6 +2916,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             app.samples = app.samples.filter((item) => item !== sample);
             renderSamples();
             draw();
+            scheduleLive();
         }
     });
 
@@ -2842,6 +2930,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             const value = parseSeconds(event.target.value);
             if (Number.isFinite(value)) sample.start = clamp(value, 0, Math.max(0, app.buffer.duration - 0.01));
             draw();
+            scheduleLive();
         }
     });
 
@@ -2852,10 +2941,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         event.target.value = '';
     });
 
-    el.gainDb.addEventListener('input', () => { app.gainDb = Number(el.gainDb.value); updateSoundLabels(); });
-    el.lowDb.addEventListener('input', () => { app.lowDb = Number(el.lowDb.value); updateSoundLabels(); });
-    el.highDb.addEventListener('input', () => { app.highDb = Number(el.highDb.value); updateSoundLabels(); });
-    el.speed.addEventListener('input', () => { app.speed = Number(el.speed.value); updateSoundLabels(); });
+    el.gainDb.addEventListener('input', () => { app.gainDb = Number(el.gainDb.value); updateSoundLabels(); scheduleLive(); });
+    el.lowDb.addEventListener('input', () => { app.lowDb = Number(el.lowDb.value); updateSoundLabels(); scheduleLive(); });
+    el.highDb.addEventListener('input', () => { app.highDb = Number(el.highDb.value); updateSoundLabels(); scheduleLive(); });
+    el.speed.addEventListener('input', () => { app.speed = Number(el.speed.value); updateSoundLabels(); scheduleLive(); });
     el.resetSoundBtn.addEventListener('click', () => {
         app.gainDb = 0;
         app.lowDb = 0;
@@ -2867,6 +2956,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.speed.value = '1';
         updateSoundLabels();
         renderStems();
+        scheduleLive();
     });
 
     window.addEventListener('keydown', (event) => {
