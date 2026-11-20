@@ -249,8 +249,33 @@
 
         /* ---------- колонки ---------- */
 
-        .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; align-items: start; }
-        @media (min-width: 1180px) { .columns > section:first-child { grid-column: span 2; } }
+                .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+
+        /* Порядок блоков: перетаскивание за ручку, без наложения */
+        .layout-bar {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            margin: 0 0 12px; font-size: 0.78rem; color: var(--dim);
+        }
+        .layout-bar .check { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+        .layout-bar .check input { accent-color: #a855f7; cursor: pointer; }
+        .layout-bar .check:hover { color: var(--text); }
+        .layout-bar .spacer { flex: 1; }
+        .card .grip {
+            display: grid; place-items: center;
+            width: 20px; height: 26px; margin-left: -8px; padding: 0;
+            border: 0; border-radius: 6px; background: transparent;
+            color: var(--dim); font-size: 0.95rem; line-height: 1;
+            cursor: grab; touch-action: none;
+        }
+        .card .grip:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
+        .card .grip:focus-visible { outline: 2px solid #a855f7; outline-offset: 1px; }
+        .card.is-dragging { opacity: 0.7; border-color: #a855f7; box-shadow: 0 0 0 1px #a855f7 inset; pointer-events: none; }
+        .card.is-dragging .grip { cursor: grabbing; }
+        body.cards-dragging { user-select: none; }
+        body.cards-dragging * { cursor: grabbing !important; }
+        @media (max-width: 720px) { .layout-hint { display: none; } }
+        /* все карточки одной ширины: любой порядок даёт ровные ряды без дырок */
+        .columns > .card { margin-bottom: 0; }
         .card-sep { height: 1px; background: var(--line); margin: 6px 0 0; }
 
         /* ---------- фрагменты ---------- */
@@ -564,9 +589,19 @@
                 </div>
             </section>
 
+            <div class="layout-bar">
+                <span class="layout-hint">⠿ Тяните блок за ручку — порядок любой, блоки не накладываются</span>
+                <div class="spacer"></div>
+                <label class="check" title="Если снять галочку, при следующей загрузке блоки вернутся в исходный порядок">
+                    <input type="checkbox" id="rememberLayout" checked>
+                    <span>Помнить порядок</span>
+                </label>
+                <button type="button" class="btn btn-ghost small" id="resetLayout" title="Вернуть исходное расположение блоков">↺ Исходный порядок</button>
+            </div>
             <div class="columns">
-                <section class="card">
+                <section class="card" data-card="clips">
                     <div class="card-head">
+                        <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
                         <h2>Фрагменты</h2>
                         <span class="badge" id="clipCount">0</span>
                         <div class="spacer"></div>
@@ -588,9 +623,10 @@
                     </div>
                 </section>
 
-                    <section class="card">
+                    <section class="card" data-card="mix">
                         <div class="card-head">
-                            <h2>Сведение</h2>
+                            <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
+                        <h2>Сведение</h2>
                         </div>
                         <div class="mix-actions">
                             <button type="button" class="btn btn-primary" id="mixPreviewBtn" disabled>▶ Прослушать</button>
@@ -612,9 +648,10 @@
                         <p class="note">Сводит всё, что слышно: трек, дорожки с уровнями, запись с микрофона и сэмплы — со скоростью, громкостью и тембром. Если выделен фрагмент, сохраняется он.</p>
                     </section>
 
-                    <section class="card">
+                    <section class="card" data-card="stems">
                         <div class="card-head">
-                            <h2>Дорожки</h2>
+                            <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
+                        <h2>Дорожки</h2>
                             <div class="spacer"></div>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
@@ -626,9 +663,61 @@
                         </p>
                     </section>
 
-                    <section class="card">
+<section class="card" data-card="voice">
                         <div class="card-head">
-                            <h2>Звук</h2>
+                            <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
+                        <h2>Голос</h2>
+                            <div class="spacer"></div>
+                            <button type="button" class="btn btn-ghost small" id="voicePreviewBtn" disabled>▶ Послушать</button>
+                            <button type="button" class="btn btn-primary small" id="voiceApplyBtn" disabled>Применить</button>
+                        </div>
+                        <div class="voice">
+                            <label class="voice-row">
+                                <span>Дорожка</span>
+                                <select id="voiceTarget" aria-label="К какой дорожке применить обработку"></select>
+                            </label>
+                            <label class="slider-row">
+                                <span>Шумодав</span>
+                                <input type="range" id="voiceDenoise" min="0" max="100" step="5" value="0" aria-label="Шумоподавление">
+                                <span class="val" id="voiceDenoiseVal">0%</span>
+                            </label>
+                            <label class="slider-row">
+                                <span>Автотюн</span>
+                                <input type="range" id="voiceTune" min="0" max="100" step="5" value="0" aria-label="Сила автотюна">
+                                <span class="val" id="voiceTuneVal">0%</span>
+                            </label>
+                            <label class="voice-row">
+                                <span>Скорость</span>
+                                <select id="voiceSpeed" aria-label="Скорость подстройки">
+                                    <option value="instant">Мгновенно</option>
+                                    <option value="fast">Быстро</option>
+                                    <option value="normal" selected>Обычно</option>
+                                    <option value="smooth">Плавно</option>
+                                </select>
+                            </label>
+                            <label class="voice-row">
+                                <span>Лад</span>
+                                <select id="voiceScale" aria-label="Лад">
+                                    <option value="chromatic" selected>Хроматика</option>
+                                    <option value="major">Мажор</option>
+                                    <option value="minor">Минор</option>
+                                </select>
+                            </label>
+                            <label class="voice-row">
+                                <span>Тоника</span>
+                                <select id="voiceKey" aria-label="Тоника"></select>
+                            </label>
+                            <label class="check-row"><input type="checkbox" id="voiceHighpass" checked> Обрезать низ (80 Гц)</label>
+                            <label class="check-row"><input type="checkbox" id="voiceCompressor"> Компрессор</label>
+                            <label class="check-row"><input type="checkbox" id="voiceNormalize" checked> Нормализовать до −1 дБ</label>
+                        </div>
+                        <p class="note">Обработка заменяет выбранную дорожку — отменяется кнопкой ↶. Автотюн рассчитан на монофонический голос: аккорды и шум он не исправляет.</p>
+                    </section>
+
+                    <section class="card" data-card="sound">
+                        <div class="card-head">
+                            <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
+                        <h2>Звук</h2>
                             <div class="spacer"></div>
                             <button type="button" class="btn btn-ghost small" id="resetSoundBtn">Сброс</button>
                         </div>
@@ -659,9 +748,10 @@
 
                     
 
-                    <section class="card">
+                    <section class="card" data-card="library">
                         <div class="card-head">
-                            <h2>Библиотека</h2>
+                            <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
+                        <h2>Библиотека</h2>
                             <span class="badge" id="libCount">0</span>
                             <div class="spacer"></div>
                             <button type="button" class="btn btn-ghost small" id="libSelectBtn" title="Выбрать несколько сэмплов">☑</button>
@@ -716,55 +806,7 @@
                         <input type="file" id="sampleInput" accept="audio/*" multiple hidden>
                     </section>
 
-                    <section class="card">
-                        <div class="card-head">
-                            <h2>Голос</h2>
-                            <div class="spacer"></div>
-                            <button type="button" class="btn btn-ghost small" id="voicePreviewBtn" disabled>▶ Послушать</button>
-                            <button type="button" class="btn btn-primary small" id="voiceApplyBtn" disabled>Применить</button>
-                        </div>
-                        <div class="voice">
-                            <label class="voice-row">
-                                <span>Дорожка</span>
-                                <select id="voiceTarget" aria-label="К какой дорожке применить обработку"></select>
-                            </label>
-                            <label class="slider-row">
-                                <span>Шумодав</span>
-                                <input type="range" id="voiceDenoise" min="0" max="100" step="5" value="0" aria-label="Шумоподавление">
-                                <span class="val" id="voiceDenoiseVal">0%</span>
-                            </label>
-                            <label class="slider-row">
-                                <span>Автотюн</span>
-                                <input type="range" id="voiceTune" min="0" max="100" step="5" value="0" aria-label="Сила автотюна">
-                                <span class="val" id="voiceTuneVal">0%</span>
-                            </label>
-                            <label class="voice-row">
-                                <span>Скорость</span>
-                                <select id="voiceSpeed" aria-label="Скорость подстройки">
-                                    <option value="instant">Мгновенно</option>
-                                    <option value="fast">Быстро</option>
-                                    <option value="normal" selected>Обычно</option>
-                                    <option value="smooth">Плавно</option>
-                                </select>
-                            </label>
-                            <label class="voice-row">
-                                <span>Лад</span>
-                                <select id="voiceScale" aria-label="Лад">
-                                    <option value="chromatic" selected>Хроматика</option>
-                                    <option value="major">Мажор</option>
-                                    <option value="minor">Минор</option>
-                                </select>
-                            </label>
-                            <label class="voice-row">
-                                <span>Тоника</span>
-                                <select id="voiceKey" aria-label="Тоника"></select>
-                            </label>
-                            <label class="check-row"><input type="checkbox" id="voiceHighpass" checked> Обрезать низ (80 Гц)</label>
-                            <label class="check-row"><input type="checkbox" id="voiceCompressor"> Компрессор</label>
-                            <label class="check-row"><input type="checkbox" id="voiceNormalize" checked> Нормализовать до −1 дБ</label>
-                        </div>
-                        <p class="note">Обработка заменяет выбранную дорожку — отменяется кнопкой ↶. Автотюн рассчитан на монофонический голос: аккорды и шум он не исправляет.</p>
-                    </section>
+                    
             </div>
         </main>
     </div>
@@ -1167,6 +1209,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         zoomIn: $('zoomIn'), zoomOut: $('zoomOut'), zoomLabel: $('zoomLabel'), fitBtn: $('fitBtn'),
         waveWrap: $('waveWrap'), wave: $('wave'), waveHint: $('waveHint'),
         selBar: $('selBar'), selText: $('selText'), selPlay: $('selPlay'), selAdd: $('selAdd'), selCut: $('selCut'), selDelete: $('selDelete'), selClear: $('selClear'), selTrim: $('selTrim'),
+        columns: document.querySelector('.columns'), rememberLayout: $('rememberLayout'), resetLayout: $('resetLayout'),
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
@@ -3048,6 +3091,156 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         toast(`Удалено ${fmt(cut)} — трек стал ${fmt(app.buffer.duration)}`, 'ok', 3200);
     }
 
+    // ——— Порядок блоков: тянуть за ручку, запоминать, сбрасывать ———
+    const CARD_ORDER_KEY = 'audioSplitter.cardOrder.v1';
+    const CARD_DEFAULT_ORDER = ['clips', 'mix', 'stems', 'voice', 'sound', 'library'];
+
+    function cardList() {
+        return [...el.columns.querySelectorAll(':scope > .card[data-card]')];
+    }
+
+    function applyCardOrder(order) {
+        const cards = new Map(cardList().map((card) => [card.dataset.card, card]));
+        const fragment = document.createDocumentFragment();
+        order.forEach((key) => {
+            const card = cards.get(key);
+            if (!card) return;
+            cards.delete(key);
+            fragment.appendChild(card);
+        });
+        cards.forEach((card) => fragment.appendChild(card));
+        el.columns.appendChild(fragment);
+    }
+
+    function saveCardOrder() {
+        try {
+            if (!el.rememberLayout.checked) {
+                localStorage.removeItem(CARD_ORDER_KEY);
+                return;
+            }
+            localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(cardList().map((card) => card.dataset.card)));
+        } catch (error) { /* приватный режим — просто не запоминаем */ }
+    }
+
+    function restoreCardLayout() {
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem(CARD_ORDER_KEY) || 'null'); } catch (error) { saved = null; }
+        if (Array.isArray(saved) && saved.length) applyCardOrder([...saved, ...CARD_DEFAULT_ORDER]);
+    }
+
+    function gridColumns() {
+        const cards = cardList();
+        if (cards.length < 2) return 1;
+        // берём самую заполненную строку: карточка на всю ширину не должна сбивать расчёт
+        const rows = [];
+        cards.forEach((card) => {
+            const top = Math.round(card.getBoundingClientRect().top);
+            const row = rows.find((item) => Math.abs(item.top - top) < 8);
+            if (row) row.count += 1;
+            else rows.push({ top, count: 1 });
+        });
+        return Math.max(...rows.map((row) => row.count));
+    }
+
+    function initCardLayout() {
+        if (!el.columns || !el.rememberLayout || !el.resetLayout) return;
+        restoreCardLayout();
+
+        let drag = null;
+
+        // автопрокрутка, когда тянем блок к краю экрана
+        const autoScroll = (y) => {
+            const edge = 90;
+            if (y < edge) window.scrollBy(0, -Math.ceil((edge - y) / 5));
+            else if (y > window.innerHeight - edge) window.scrollBy(0, Math.ceil((y - (window.innerHeight - edge)) / 5));
+        };
+
+        const onMove = (event) => {
+            if (!drag) return;
+            event.preventDefault();
+            autoScroll(event.clientY);
+            const under = document.elementFromPoint(event.clientX, event.clientY);
+            const target = under && under.closest ? under.closest('.card[data-card]') : null;
+            if (!target || target === drag.card || target.parentElement !== el.columns) return;
+
+            const rect = target.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            // в сетке сравниваем, куда курсор ближе — по горизонтали или по вертикали
+            const dx = Math.abs(event.clientX - cx) / Math.max(rect.width, 1);
+            const dy = Math.abs(event.clientY - cy) / Math.max(rect.height, 1);
+            const after = gridColumns() > 1
+                ? (dx > dy ? event.clientX > cx : event.clientY > cy)
+                : event.clientY > cy;
+
+            if (after) target.after(drag.card);
+            else target.before(drag.card);
+        };
+
+        const stopDrag = (commit) => {
+            if (!drag) return;
+            drag.card.classList.remove('is-dragging');
+            document.body.classList.remove('cards-dragging');
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onCancel);
+            const changed = cardList().map((card) => card.dataset.card).join() !== drag.startOrder;
+            drag = null;
+            if (commit && changed) {
+                saveCardOrder();
+                toast('Порядок блоков обновлён', 'ok', 1600);
+            }
+        };
+        const onUp = () => stopDrag(true);
+        const onCancel = () => stopDrag(false);
+
+        el.columns.addEventListener('pointerdown', (event) => {
+            const grip = event.target.closest ? event.target.closest('.grip') : null;
+            if (!grip || event.button > 0) return;
+            const card = grip.closest('.card[data-card]');
+            if (!card) return;
+            event.preventDefault();
+            drag = { card, startOrder: cardList().map((item) => item.dataset.card).join() };
+            card.classList.add('is-dragging');
+            document.body.classList.add('cards-dragging');
+            window.addEventListener('pointermove', onMove, { passive: false });
+            window.addEventListener('pointerup', onUp);
+            window.addEventListener('pointercancel', onCancel);
+        });
+
+        // клавиатура: Ctrl + ← / → двигает блок, когда ручка в фокусе
+        el.columns.addEventListener('keydown', (event) => {
+            const grip = event.target.closest ? event.target.closest('.grip') : null;
+            if (!grip || !event.ctrlKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+            const card = grip.closest('.card[data-card]');
+            if (!card) return;
+            event.preventDefault();
+            if (event.key === 'ArrowLeft' && card.previousElementSibling) {
+                el.columns.insertBefore(card, card.previousElementSibling);
+            } else if (event.key === 'ArrowRight' && card.nextElementSibling) {
+                el.columns.insertBefore(card.nextElementSibling, card);
+            }
+            saveCardOrder();
+            grip.focus();
+        });
+
+        el.rememberLayout.addEventListener('change', () => {
+            if (el.rememberLayout.checked) {
+                saveCardOrder();
+                toast('Порядок блоков запомнится', 'ok', 2000);
+            } else {
+                try { localStorage.removeItem(CARD_ORDER_KEY); } catch (error) { /* ignore */ }
+                toast('При следующей загрузке — исходный порядок', 'ok', 2600);
+            }
+        });
+
+        el.resetLayout.addEventListener('click', () => {
+            applyCardOrder(CARD_DEFAULT_ORDER);
+            saveCardOrder();
+            toast('Блоки вернулись в исходный порядок', 'ok', 2200);
+        });
+    }
+
     // Обрезка: оставить только выделенное, остальное отбросить
     function trimToSelection() {
         if (!selectionValid()) { toast('Сначала выделите участок на волне', 'error'); return; }
@@ -4624,6 +4817,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.selAdd.addEventListener('click', addClipFromSelection);
     el.selCut.addEventListener('click', cutSelection);
     el.selTrim.addEventListener('click', trimToSelection);
+    initCardLayout();
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
