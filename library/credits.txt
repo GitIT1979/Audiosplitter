@@ -1,105 +1,19 @@
 AudioSplitter — библиотека сэмплов
 
-arp_1.mp3 — guitar arpeggio C.wav — Lucks86 — CC0 1.0 — https://freesound.org/people/Lucks86/sounds/246268
-arp_2.mp3 — Arpeggio 01.wav — Accorman — CC0 1.0 — https://freesound.org/people/Accorman/sounds/573646
-bass_1.mp3 — bass G1.wav — mat_the_glad — CC0 1.0 — https://freesound.org/people/mat_the_glad/sounds/43943
-bell_1.mp3 — Sleigh bells hit — Selector — CC0 1.0 — https://freesound.org/people/Selector/sounds/369506
-block_1.mp3 — Wood block hit — thomasjaunism — CC0 1.0 — https://freesound.org/people/thomasjaunism/sounds/218460
-block_2.mp3 — Plastic Woodblock Rhythm.aif — Housed1J — CC0 1.0 — https://freesound.org/people/Housed1J/sounds/176556
-block_3.mp3 — Northeast Woodblock — tripjazz — CC0 1.0 — https://freesound.org/people/tripjazz/sounds/508029
-bongo_1.mp3 — bongo loop with hats_130bpm.wav — Br4dzdestroyer — CC0 1.0 — https://freesound.org/people/Br4dzdestroyer/sounds/369044
-brass_1.mp3 — TaDa!.aif — jimhancock — CC0 1.0 — https://freesound.org/people/jimhancock/sounds/256128
-brass_2.mp3 — A2 Drone Tone — hektor688 — CC0 1.0 — https://freesound.org/people/hektor688/sounds/137756
-breath_1.mp3 — Breath Human Sci.wav — cidchili — CC0 1.0 — https://freesound.org/people/cidchili/sounds/54961
-brush_1.mp3 — brush_rubbing1.aif — Heigh-hoo — CC0 1.0 — https://freesound.org/people/Heigh-hoo/sounds/20297
-brush_2.mp3 — brush_rubbing2.aif — Heigh-hoo — CC0 1.0 — https://freesound.org/people/Heigh-hoo/sounds/20298
-cello_1.mp3 — Cello_mono.wav — speedyrce — CC0 1.0 — https://freesound.org/people/speedyrce/sounds/329777
-choir_1.mp3 — Choir of Voices - Single Chord — bone666138 — CC0 1.0 — https://freesound.org/people/bone666138/sounds/274121
-clap_1.mp3 — Hand claps — parkersenk — CC0 1.0 — https://freesound.org/people/parkersenk/sounds/452709
-clap_2.mp3 — Hand Claps — Jofae — CC0 1.0 — https://freesound.org/people/Jofae/sounds/362954
-clap_3.mp3 — soft noise clap — Saltbearer — CC0 1.0 — https://freesound.org/people/Saltbearer/sounds/477808
-clap_4.mp3 — soft noise clap with filters — Saltbearer — CC0 1.0 — https://freesound.org/people/Saltbearer/sounds/477809
-clarinet_1.mp3 — Clarinet multiphonic — camel7695 — CC0 1.0 — https://freesound.org/people/camel7695/sounds/427502
-click_1.mp3 — MPC Metronome click — trader_one — CC0 1.0 — https://freesound.org/people/trader_one/sounds/684106
-conga_1.mp3 — Kygo Tropical Conga Percussion Hit — Cloud-10 — CC0 1.0 — https://freesound.org/people/Cloud-10/sounds/678748
-conga_2.mp3 — Conga (F#)- Tone — Sassaby — CC0 1.0 — https://freesound.org/people/Sassaby/sounds/512063
-conga_3.mp3 — Conga Fever — MarcosPurziani — CC0 1.0 — https://freesound.org/people/MarcosPurziani/sounds/537171
-cowbell_1.mp3 — cowbell — 6rzyb — CC0 1.0 — https://freesound.org/people/6rzyb/sounds/468208
-cowbell_2.mp3 — COWBELL WITH BLASTICK — curesforbrokenhearts — CC0 1.0 — https://freesound.org/people/curesforbrokenhearts/sounds/432202
-crash_1.mp3 — cymbal-reversed-glassy-resonance.wav — burnttoys — CC0 1.0 — https://freesound.org/people/burnttoys/sounds/9523
-crash_2.mp3 — Reversed Crash Cymbal — TheEndOfACycle — CC0 1.0 — https://freesound.org/people/TheEndOfACycle/sounds/674291
-crash_3.mp3 — Reversed Crash Cymbal - Low — TheEndOfACycle — CC0 1.0 — https://freesound.org/people/TheEndOfACycle/sounds/674292
-djembe_1.mp3 — Djembe Hit 6 Hi Rim.wav — carlmartin — CC0 1.0 — https://freesound.org/people/carlmartin/sounds/158969
-djembe_2.mp3 — Djembe Hit 6 Rim.wav — carlmartin — CC0 1.0 — https://freesound.org/people/carlmartin/sounds/158968
+05 - Звуки выстрела очередью из пулемета.mp3 — 05 - Звуки выстрела очередью из пулемета — своя запись — CC0 1.0 — 
+11 - Звук выстрела из снайперки винтовки.mp3 — 11 - Звук выстрела из снайперки винтовки — своя запись — CC0 1.0 — 
+20 - Перезарядка и выстрел Калашаников.mp3 — 20 - Перезарядка и выстрел Калашаников — своя запись — CC0 1.0 — 
+26 - Выстрел танка (6 раз).mp3 — 26 - Выстрел танка (6 раз) — своя запись — CC0 1.0 — 
+27 - Лазер, лазерный выстрел.mp3 — 27 - Лазер, лазерный выстрел — своя запись — CC0 1.0 — 
 down_1.mp3 — Lunar Downlifter FX 4.wav — maqsim — CC0 1.0 — https://freesound.org/people/maqsim/sounds/172157
-eguitar_1.mp3 — Electric guitar Metal Riff — davidkyoku — CC0 1.0 — https://freesound.org/people/davidkyoku/sounds/133999
-eguitar_2.mp3 — Funky Electric Guitar Sample 15 - 90 BPM — bergice — CC0 1.0 — https://freesound.org/people/bergice/sounds/268270
-flute_1.mp3 — Flute Play C - 14.wav — cms4f — CC0 1.0 — https://freesound.org/people/cms4f/sounds/159136
-flute_2.mp3 — Flute alto.wav — SeryLis — CC0 1.0 — https://freesound.org/people/SeryLis/sounds/177244
 fx_1.mp3 — Percusive Noise Riser.wav — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/261415
 fx_2.mp3 — Sweep Downwards.wav — stair — CC0 1.0 — https://freesound.org/people/stair/sounds/387552
 fx_3.mp3 — Deep Whoosh #1 — Kinoton — CC0 1.0 — https://freesound.org/people/Kinoton/sounds/351256
-guitar_1.mp3 — Echo Chime Chime.mp3 — husky70 — CC0 1.0 — https://freesound.org/people/husky70/sounds/161316
-guitar_2.mp3 — Dramatic Guitar — soundsfromtheholeofmymind — CC0 1.0 — https://freesound.org/people/soundsfromtheholeofmymind/sounds/341277
-hat_1.mp3 — Zildjian A Custom Hi-Hat Cymbals Closed Hit.WAV — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/45664
-hat_2.mp3 — Echoed Hi-Hats — ani_music — CC0 1.0 — https://freesound.org/people/ani_music/sounds/165321
-hat_3.mp3 — Chimbal Fechado - Closed Hi-Hat — gilblack1234 — CC0 1.0 — https://freesound.org/people/gilblack1234/sounds/527797
-hat_4.mp3 — Yamaha PSR-36 Closed Hi-Hat — Joao_Janz — CC0 1.0 — https://freesound.org/people/Joao_Janz/sounds/477891
-horn_1.mp3 — Horn Stabs Entrance — bevibeldesign — CC0 1.0 — https://freesound.org/people/bevibeldesign/sounds/350433
-keys_1.mp3 — Hard piano note stereo saturated spooky — tusic99 — CC0 1.0 — https://freesound.org/people/tusic99/sounds/648902
-keys_2.mp3 — cat piano note c.wav — meku_a — CC0 1.0 — https://freesound.org/people/meku_a/sounds/612806
-kick_1.mp3 — Simple Kick Drum — IanStarGem — CC0 1.0 — https://freesound.org/people/IanStarGem/sounds/274775
-kick_2.mp3 — Kick Drum — Poligonstudio — CC0 1.0 — https://freesound.org/people/Poligonstudio/sounds/410149
-kick_3.mp3 — SH01a Bass Drum 004 — ANARKYA — CC0 1.0 — https://freesound.org/people/ANARKYA/sounds/459895
-kick_4.mp3 — ONE SHOT 2.wav — Newangelsociety — CC0 1.0 — https://freesound.org/people/Newangelsociety/sounds/65477
-lead_1.mp3 — synth lead loop.WAV — ultrafix — CC0 1.0 — https://freesound.org/people/ultrafix/sounds/60694
-lead_2.mp3 — Creepy Synth Lead, Tremolo — f-r-a-g-i-l-e — CC0 1.0 — https://freesound.org/people/f-r-a-g-i-l-e/sounds/496744
-loop_1.mp3 — Tribe Drum Loop — PearceWilsonKing — CC0 1.0 — https://freesound.org/people/PearceWilsonKing/sounds/342465
 noise_1.mp3 — Vinyl Noise, Crackles for Looping — f-r-a-g-i-l-e — CC0 1.0 — https://freesound.org/people/f-r-a-g-i-l-e/sounds/474813
-organ_1.mp3 — clean_ci_fa_kruis.wav — CmdRobot — CC0 1.0 — https://freesound.org/people/CmdRobot/sounds/28143
-organ_2.mp3 — clean_sol_ci.wav — CmdRobot — CC0 1.0 — https://freesound.org/people/CmdRobot/sounds/28161
-pad_1.mp3 — [Synth pad] pad_satyr.wav — waveplaySFX — CC0 1.0 — https://freesound.org/people/waveplaySFX/sounds/264209
-perc_1.mp3 — Matchbox wood shaker percussion one-shot foley sound.wav — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/644706
-perc_2.mp3 — Mentos looping rattle percussion - shaker percussion foley - one shot.wav — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/644668
-piano_1.mp3 — A - Piano Chord — blakengouda — CC0 1.0 — https://freesound.org/people/blakengouda/sounds/528004
-piano_2.mp3 — piano chord — PhonosUPF — CC0 1.0 — https://freesound.org/people/PhonosUPF/sounds/488789
-pluck_1.mp3 — Intro Synth — noirenex — CC0 1.0 — https://freesound.org/people/noirenex/sounds/159398
-pluck_2.mp3 — Insomniac Snyth Loop Rev.wav — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/261209
-rhodes_1.mp3 — Dissonant Electric Piano Sting 3 — nomiqbomi — CC0 1.0 — https://freesound.org/people/nomiqbomi/sounds/578340
-rhodes_2.mp3 — Dissonant Electric Piano Sting 2 — nomiqbomi — CC0 1.0 — https://freesound.org/people/nomiqbomi/sounds/578341
-ride_1.mp3 — Zildjian Transitional Stamp Sizzle Ride Cymbal Bell Hit.wav — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/46446
-ride_2.mp3 — Ride Cymbal 3 Edge — Sajmund — CC0 1.0 — https://freesound.org/people/Sajmund/sounds/132405
-rim_1.mp3 — Rimshot (sweet) — Sajmund — CC0 1.0 — https://freesound.org/people/Sajmund/sounds/132418
-rim_2.mp3 — Sting, rimshot, drum roll (smooth) — tlwmdbt — CC0 1.0 — https://freesound.org/people/tlwmdbt/sounds/440829
 riser_1.mp3 — Riser Noise FX — NecoKen1 — CC0 1.0 — https://freesound.org/people/NecoKen1/sounds/627729
 riser_2.mp3 — Scary Hits & Risers 001 — Xinematix — CC0 1.0 — https://freesound.org/people/Xinematix/sounds/396161
-sax_1.mp3 — Tenor Sax Phrase with Ghosted Note — Adam_in_Tokyo — CC0 1.0 — https://freesound.org/people/Adam_in_Tokyo/sounds/479052
 scratch_1.mp3 — Vocal scratch voice vinyl scratching one shot — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/641343
-shaker_1.mp3 — Shuffle Shaker Loop 100 BPM.wav — 8bitmyketison — CC0 1.0 — https://freesound.org/people/8bitmyketison/sounds/700634
-shaker_2.mp3 — Pill Shaker Loop 130 BPM.wav — 8bitmyketison — CC0 1.0 — https://freesound.org/people/8bitmyketison/sounds/699957
-shout_1.mp3 — US Military Soldier Shouting 'Whoo!' — qubodup — CC0 1.0 — https://freesound.org/people/qubodup/sounds/161340
 snap_1.mp3 — Percussion Snap — purpleducttapehat — CC0 1.0 — https://freesound.org/people/purpleducttapehat/sounds/272114
-snare_1.mp3 — snare drum 4.wav — KEVOY — CC0 1.0 — https://freesound.org/people/KEVOY/sounds/82583
-snare_2.mp3 — Dubstep Snare drum — Tr4ck3r — CC0 1.0 — https://freesound.org/people/Tr4ck3r/sounds/190592
-snare_3.mp3 — snare hit a.wav — lofabred — CC0 1.0 — https://freesound.org/people/lofabred/sounds/12817
-snare_4.mp3 — Snare Hit — deadpoetsocietyband — CC0 1.0 — https://freesound.org/people/deadpoetsocietyband/sounds/128976
-string_1.mp3 — string pizzicato — PhonosUPF — CC0 1.0 — https://freesound.org/people/PhonosUPF/sounds/498490
-sub_1.mp3 — sub bass 4 secondsssss.wav — uzerx — CC0 1.0 — https://freesound.org/people/uzerx/sounds/59540
-sub_2.mp3 — sub bass 5 secondsssss.wav — uzerx — CC0 1.0 — https://freesound.org/people/uzerx/sounds/59541
-synth_1.mp3 — Synth Stab 1 — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/265675
-tamb_1.mp3 — tambourine 1.wav — marvman — CC0 1.0 — https://freesound.org/people/marvman/sounds/58875
-tamb_2.mp3 — tambourine one shot.wav — dfeltch — CC0 1.0 — https://freesound.org/people/dfeltch/sounds/171658
-tom_1.mp3 — Yamaha Oak Custom Tom Mid.wav — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/46554
-tom_2.mp3 — TOM HITS 01.wav — HUMANOISEMAKER — CC0 1.0 — https://freesound.org/people/HUMANOISEMAKER/sounds/530692
-tom_3.mp3 — TOM HITS 03.wav — HUMANOISEMAKER — CC0 1.0 — https://freesound.org/people/HUMANOISEMAKER/sounds/530694
-triangle_1.mp3 — Triangle_Open_02 — cabled_mess — CC0 1.0 — https://freesound.org/people/cabled_mess/sounds/349503
-triangle_2.mp3 — Triangle_Open_01 — cabled_mess — CC0 1.0 — https://freesound.org/people/cabled_mess/sounds/349501
-trumpet_1.mp3 — trumpet-E4 — germanio — CC0 1.0 — https://freesound.org/people/germanio/sounds/369912
-trumpet_2.mp3 — F1-1.wav — Vlad99 — CC0 1.0 — https://freesound.org/people/Vlad99/sounds/212989
-violin_1.mp3 — v01_N.WAV — Department64 — CC0 1.0 — https://freesound.org/people/Department64/sounds/65384
-vox_1.mp3 — ahh.wav — filmbetrachterin — CC0 1.0 — https://freesound.org/people/filmbetrachterin/sounds/414227
-vox_2.mp3 — ahh.wav — filmbetrachterin — CC0 1.0 — https://freesound.org/people/filmbetrachterin/sounds/414227
-whisper_1.mp3 — Creepy Whispering — RaspberryTickle — CC0 1.0 — https://freesound.org/people/RaspberryTickle/sounds/234044
 looperman-l-0052497-0001063-trancefer-hard-bass.wav — Trancefer Hard Bass — автор не указан — Looperman (только личное) — https://www.looperman.com/loops/detail/1063
 looperman-l-0082073-0074983-mrrobot-psychodelic-electro-bass-01.wav — Mrrobot Psychodelic Electro Bass 01 — автор не указан — Looperman (только личное) — https://www.looperman.com/loops/detail/74983
 looperman-l-0342904-0056432-breo-dirty-vocal-dubstep-bass.wav — Breo Dirty Vocal Dubstep Bass — автор не указан — Looperman (только личное) — https://www.looperman.com/loops/detail/56432
@@ -139,8 +53,107 @@ looperman-l-8260433-0436298-a-villainous-siberian-taiga-style-dance-riff.wav —
 looperman-l-8260433-0436759-15-second-set-loop-part-4-precision.wav — 15 Second Set Loop Part 4 Precision — автор не указан — Looperman (только личное) — https://www.looperman.com/loops/detail/436759
 looperman-l-8353314-0436783-hiphop-drum-loop-99-bpm-bounce-louisbreaks.wav — Hiphop Drum Loop 99 Bpm Bounce Louisbreaks — автор не указан — Looperman (только личное) — https://www.looperman.com/loops/detail/436783
 looperman-l-8353314-0436908-hiphop-drum-loop-90-bpm-snap-louisbreaks.wav — Hiphop Drum Loop 90 Bpm Snap Louisbreaks — автор не указан — Looperman (только личное) — https://www.looperman.com/loops/detail/436908
-05 - Звуки выстрела очередью из пулемета.mp3 — 05 - Звуки выстрела очередью из пулемета — автор не указан — неизвестно — 
-11 - Звук выстрела из снайперки винтовки.mp3 — 11 - Звук выстрела из снайперки винтовки — автор не указан — неизвестно — 
-20 - Перезарядка и выстрел Калашаников.mp3 — 20 - Перезарядка и выстрел Калашаников — автор не указан — неизвестно — 
-26 - Выстрел танка (6 раз).mp3 — 26 - Выстрел танка (6 раз) — автор не указан — неизвестно — 
-27 - Лазер, лазерный выстрел.mp3 — 27 - Лазер, лазерный выстрел — автор не указан — неизвестно — 
+bass_1.mp3 — bass G1.wav — mat_the_glad — CC0 1.0 — https://freesound.org/people/mat_the_glad/sounds/43943
+sub_1.mp3 — sub bass 4 secondsssss.wav — uzerx — CC0 1.0 — https://freesound.org/people/uzerx/sounds/59540
+sub_2.mp3 — sub bass 5 secondsssss.wav — uzerx — CC0 1.0 — https://freesound.org/people/uzerx/sounds/59541
+breath_1.mp3 — Breath Human Sci.wav — cidchili — CC0 1.0 — https://freesound.org/people/cidchili/sounds/54961
+shout_1.mp3 — US Military Soldier Shouting 'Whoo!' — qubodup — CC0 1.0 — https://freesound.org/people/qubodup/sounds/161340
+vox_1.mp3 — vocal loop — aptbr — CC0 1.0 — https://freesound.org/people/aptbr/sounds/362116
+vox_10.mp3 — Girl sings 'Laa' — maurolupo — CC0 1.0 — https://freesound.org/people/maurolupo/sounds/213259
+vox_2.mp3 — ahh.wav — filmbetrachterin — CC0 1.0 — https://freesound.org/people/filmbetrachterin/sounds/414227
+vox_3.mp3 — Morning Country Female Vocal Loop Mastered _01 20200621.wav — szegvari — CC0 1.0 — https://freesound.org/people/szegvari/sounds/523227
+vox_4.mp3 — Vocal Loop Vocoder — hutyl — CC0 1.0 — https://freesound.org/people/hutyl/sounds/566684
+vox_5.mp3 — Boom Boom Boom - vocal looping rhytmic shots — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/642832
+vox_6.mp3 — Looperzilorz - Are you high - vocal loop — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/643331
+vox_7.mp3 — YES YES YES LOOP - vocal looping - positive vibrations.wav — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/645540
+vox_8.mp3 — Choir of Voices - Single Chord — bone666138 — CC0 1.0 — https://freesound.org/people/bone666138/sounds/274121
+vox_9.mp3 — woman humming — PSsoundproject — CC0 1.0 — https://freesound.org/people/PSsoundproject/sounds/183565
+whisper_1.mp3 — Creepy Whispering — RaspberryTickle — CC0 1.0 — https://freesound.org/people/RaspberryTickle/sounds/234044
+arp_1.mp3 — guitar arpeggio C.wav — Lucks86 — CC0 1.0 — https://freesound.org/people/Lucks86/sounds/246268
+arp_2.mp3 — Arpeggio 01.wav — Accorman — CC0 1.0 — https://freesound.org/people/Accorman/sounds/573646
+bell_1.mp3 — Sleigh bells hit — Selector — CC0 1.0 — https://freesound.org/people/Selector/sounds/369506
+brass_1.mp3 — TaDa!.aif — jimhancock — CC0 1.0 — https://freesound.org/people/jimhancock/sounds/256128
+brass_2.mp3 — A2 Drone Tone — hektor688 — CC0 1.0 — https://freesound.org/people/hektor688/sounds/137756
+cello_1.mp3 — Cello_mono.wav — speedyrce — CC0 1.0 — https://freesound.org/people/speedyrce/sounds/329777
+clarinet_1.mp3 — Clarinet multiphonic — camel7695 — CC0 1.0 — https://freesound.org/people/camel7695/sounds/427502
+eguitar_1.mp3 — Electric guitar Metal Riff — davidkyoku — CC0 1.0 — https://freesound.org/people/davidkyoku/sounds/133999
+eguitar_2.mp3 — Funky Electric Guitar Sample 15 - 90 BPM — bergice — CC0 1.0 — https://freesound.org/people/bergice/sounds/268270
+flute_1.mp3 — Flute Play C - 14.wav — cms4f — CC0 1.0 — https://freesound.org/people/cms4f/sounds/159136
+flute_2.mp3 — Flute alto.wav — SeryLis — CC0 1.0 — https://freesound.org/people/SeryLis/sounds/177244
+guitar_1.mp3 — Echo Chime Chime.mp3 — husky70 — CC0 1.0 — https://freesound.org/people/husky70/sounds/161316
+guitar_2.mp3 — Dramatic Guitar — soundsfromtheholeofmymind — CC0 1.0 — https://freesound.org/people/soundsfromtheholeofmymind/sounds/341277
+horn_1.mp3 — Horn Stabs Entrance — bevibeldesign — CC0 1.0 — https://freesound.org/people/bevibeldesign/sounds/350433
+keys_1.mp3 — Hard piano note stereo saturated spooky — tusic99 — CC0 1.0 — https://freesound.org/people/tusic99/sounds/648902
+keys_2.mp3 — cat piano note c.wav — meku_a — CC0 1.0 — https://freesound.org/people/meku_a/sounds/612806
+lead_1.mp3 — synth lead loop.WAV — ultrafix — CC0 1.0 — https://freesound.org/people/ultrafix/sounds/60694
+lead_2.mp3 — Creepy Synth Lead, Tremolo — f-r-a-g-i-l-e — CC0 1.0 — https://freesound.org/people/f-r-a-g-i-l-e/sounds/496744
+loop_1.mp3 — Tribe Drum Loop — PearceWilsonKing — CC0 1.0 — https://freesound.org/people/PearceWilsonKing/sounds/342465
+organ_1.mp3 — clean_ci_fa_kruis.wav — CmdRobot — CC0 1.0 — https://freesound.org/people/CmdRobot/sounds/28143
+organ_2.mp3 — clean_sol_ci.wav — CmdRobot — CC0 1.0 — https://freesound.org/people/CmdRobot/sounds/28161
+pad_1.mp3 — [Synth pad] pad_satyr.wav — waveplaySFX — CC0 1.0 — https://freesound.org/people/waveplaySFX/sounds/264209
+piano_1.mp3 — A - Piano Chord — blakengouda — CC0 1.0 — https://freesound.org/people/blakengouda/sounds/528004
+piano_2.mp3 — piano chord — PhonosUPF — CC0 1.0 — https://freesound.org/people/PhonosUPF/sounds/488789
+pluck_1.mp3 — Intro Synth — noirenex — CC0 1.0 — https://freesound.org/people/noirenex/sounds/159398
+pluck_2.mp3 — Insomniac Snyth Loop Rev.wav — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/261209
+rhodes_1.mp3 — Dissonant Electric Piano Sting 3 — nomiqbomi — CC0 1.0 — https://freesound.org/people/nomiqbomi/sounds/578340
+rhodes_2.mp3 — Dissonant Electric Piano Sting 2 — nomiqbomi — CC0 1.0 — https://freesound.org/people/nomiqbomi/sounds/578341
+sax_1.mp3 — Tenor Sax Phrase with Ghosted Note — Adam_in_Tokyo — CC0 1.0 — https://freesound.org/people/Adam_in_Tokyo/sounds/479052
+string_1.mp3 — string pizzicato — PhonosUPF — CC0 1.0 — https://freesound.org/people/PhonosUPF/sounds/498490
+synth_1.mp3 — Synth Stab 1 — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/265675
+trumpet_1.mp3 — trumpet-E4 — germanio — CC0 1.0 — https://freesound.org/people/germanio/sounds/369912
+trumpet_2.mp3 — F1-1.wav — Vlad99 — CC0 1.0 — https://freesound.org/people/Vlad99/sounds/212989
+violin_1.mp3 — v01_N.WAV — Department64 — CC0 1.0 — https://freesound.org/people/Department64/sounds/65384
+block_1.mp3 — Wood block hit — thomasjaunism — CC0 1.0 — https://freesound.org/people/thomasjaunism/sounds/218460
+block_2.mp3 — Plastic Woodblock Rhythm.aif — Housed1J — CC0 1.0 — https://freesound.org/people/Housed1J/sounds/176556
+block_3.mp3 — Northeast Woodblock — tripjazz — CC0 1.0 — https://freesound.org/people/tripjazz/sounds/508029
+bongo_1.mp3 — bongo loop with hats_130bpm.wav — Br4dzdestroyer — CC0 1.0 — https://freesound.org/people/Br4dzdestroyer/sounds/369044
+brush_1.mp3 — brush_rubbing1.aif — Heigh-hoo — CC0 1.0 — https://freesound.org/people/Heigh-hoo/sounds/20297
+brush_2.mp3 — brush_rubbing2.aif — Heigh-hoo — CC0 1.0 — https://freesound.org/people/Heigh-hoo/sounds/20298
+clap_1.mp3 — Hand claps — parkersenk — CC0 1.0 — https://freesound.org/people/parkersenk/sounds/452709
+clap_2.mp3 — Hand Claps — Jofae — CC0 1.0 — https://freesound.org/people/Jofae/sounds/362954
+clap_3.mp3 — soft noise clap — Saltbearer — CC0 1.0 — https://freesound.org/people/Saltbearer/sounds/477808
+clap_4.mp3 — soft noise clap with filters — Saltbearer — CC0 1.0 — https://freesound.org/people/Saltbearer/sounds/477809
+click_1.mp3 — MPC Metronome click — trader_one — CC0 1.0 — https://freesound.org/people/trader_one/sounds/684106
+conga_1.mp3 — Kygo Tropical Conga Percussion Hit — Cloud-10 — CC0 1.0 — https://freesound.org/people/Cloud-10/sounds/678748
+conga_2.mp3 — Conga (F#)- Tone — Sassaby — CC0 1.0 — https://freesound.org/people/Sassaby/sounds/512063
+conga_3.mp3 — Conga Fever — MarcosPurziani — CC0 1.0 — https://freesound.org/people/MarcosPurziani/sounds/537171
+cowbell_1.mp3 — cowbell — 6rzyb — CC0 1.0 — https://freesound.org/people/6rzyb/sounds/468208
+cowbell_2.mp3 — COWBELL WITH BLASTICK — curesforbrokenhearts — CC0 1.0 — https://freesound.org/people/curesforbrokenhearts/sounds/432202
+crash_1.mp3 — cymbal-reversed-glassy-resonance.wav — burnttoys — CC0 1.0 — https://freesound.org/people/burnttoys/sounds/9523
+crash_2.mp3 — Reversed Crash Cymbal — TheEndOfACycle — CC0 1.0 — https://freesound.org/people/TheEndOfACycle/sounds/674291
+crash_3.mp3 — Reversed Crash Cymbal - Low — TheEndOfACycle — CC0 1.0 — https://freesound.org/people/TheEndOfACycle/sounds/674292
+djembe_1.mp3 — Djembe Hit 6 Hi Rim.wav — carlmartin — CC0 1.0 — https://freesound.org/people/carlmartin/sounds/158969
+djembe_2.mp3 — Djembe Hit 6 Rim.wav — carlmartin — CC0 1.0 — https://freesound.org/people/carlmartin/sounds/158968
+hat_1.mp3 — Zildjian A Custom Hi-Hat Cymbals Closed Hit.WAV — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/45664
+hat_2.mp3 — Echoed Hi-Hats — ani_music — CC0 1.0 — https://freesound.org/people/ani_music/sounds/165321
+hat_3.mp3 — Chimbal Fechado - Closed Hi-Hat — gilblack1234 — CC0 1.0 — https://freesound.org/people/gilblack1234/sounds/527797
+hat_4.mp3 — Yamaha PSR-36 Closed Hi-Hat — Joao_Janz — CC0 1.0 — https://freesound.org/people/Joao_Janz/sounds/477891
+kick_1.mp3 — Simple Kick Drum — IanStarGem — CC0 1.0 — https://freesound.org/people/IanStarGem/sounds/274775
+kick_2.mp3 — Kick Drum — Poligonstudio — CC0 1.0 — https://freesound.org/people/Poligonstudio/sounds/410149
+kick_3.mp3 — SH01a Bass Drum 004 — ANARKYA — CC0 1.0 — https://freesound.org/people/ANARKYA/sounds/459895
+kick_4.mp3 — ONE SHOT 2.wav — Newangelsociety — CC0 1.0 — https://freesound.org/people/Newangelsociety/sounds/65477
+perc_1.mp3 — Matchbox wood shaker percussion one-shot foley sound.wav — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/644706
+perc_2.mp3 — Mentos looping rattle percussion - shaker percussion foley - one shot.wav — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/644668
+ride_1.mp3 — Zildjian Transitional Stamp Sizzle Ride Cymbal Bell Hit.wav — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/46446
+ride_2.mp3 — Ride Cymbal 3 Edge — Sajmund — CC0 1.0 — https://freesound.org/people/Sajmund/sounds/132405
+rim_1.mp3 — Rimshot (sweet) — Sajmund — CC0 1.0 — https://freesound.org/people/Sajmund/sounds/132418
+rim_2.mp3 — Sting, rimshot, drum roll (smooth) — tlwmdbt — CC0 1.0 — https://freesound.org/people/tlwmdbt/sounds/440829
+shaker_1.mp3 — Shuffle Shaker Loop 100 BPM.wav — 8bitmyketison — CC0 1.0 — https://freesound.org/people/8bitmyketison/sounds/700634
+shaker_2.mp3 — Pill Shaker Loop 130 BPM.wav — 8bitmyketison — CC0 1.0 — https://freesound.org/people/8bitmyketison/sounds/699957
+snare_1.mp3 — snare drum 4.wav — KEVOY — CC0 1.0 — https://freesound.org/people/KEVOY/sounds/82583
+snare_2.mp3 — Dubstep Snare drum — Tr4ck3r — CC0 1.0 — https://freesound.org/people/Tr4ck3r/sounds/190592
+snare_3.mp3 — snare hit a.wav — lofabred — CC0 1.0 — https://freesound.org/people/lofabred/sounds/12817
+snare_4.mp3 — Snare Hit — deadpoetsocietyband — CC0 1.0 — https://freesound.org/people/deadpoetsocietyband/sounds/128976
+tamb_1.mp3 — tambourine 1.wav — marvman — CC0 1.0 — https://freesound.org/people/marvman/sounds/58875
+tamb_2.mp3 — tambourine one shot.wav — dfeltch — CC0 1.0 — https://freesound.org/people/dfeltch/sounds/171658
+tom_1.mp3 — Yamaha Oak Custom Tom Mid.wav — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/46554
+tom_2.mp3 — TOM HITS 01.wav — HUMANOISEMAKER — CC0 1.0 — https://freesound.org/people/HUMANOISEMAKER/sounds/530692
+tom_3.mp3 — TOM HITS 03.wav — HUMANOISEMAKER — CC0 1.0 — https://freesound.org/people/HUMANOISEMAKER/sounds/530694
+triangle_1.mp3 — Triangle_Open_02 — cabled_mess — CC0 1.0 — https://freesound.org/people/cabled_mess/sounds/349503
+triangle_2.mp3 — Triangle_Open_01 — cabled_mess — CC0 1.0 — https://freesound.org/people/cabled_mess/sounds/349501
+amb_1.mp3 — Ambient Pad Cmaj7.wav — jcadwell — CC0 1.0 — https://freesound.org/people/jcadwell/sounds/500509
+amb_2.mp3 — Dice & Flute Ambient Pad 1 Stereo C3 — Vanyamba — CC0 1.0 — https://freesound.org/people/Vanyamba/sounds/524778
+amb_3.mp3 — Action music loop with dark ambient drones — burning-mir — CC0 1.0 — https://freesound.org/people/burning-mir/sounds/155139
+amb_4.mp3 — Dark ambient drone sound — martinbeltov — CC0 1.0 — https://freesound.org/people/martinbeltov/sounds/244196
+amb_5.mp3 — Ambient Drone Squeak Sounds — NachtmahrTV — CC0 1.0 — https://freesound.org/people/NachtmahrTV/sounds/553184
+amb_6.mp3 — Door hum drone tone Tarragon.flac — TRP — CC0 1.0 — https://freesound.org/people/TRP/sounds/573829
