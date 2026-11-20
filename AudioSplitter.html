@@ -5638,10 +5638,17 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     /* ------------------------------------------------------------- события */
 
-    el.waveOpenBtn.addEventListener('click', () => el.fileInput.click());
+    // открываем диалог выбора — сразу глушим звук, иначе старый трек играет поверх выбора
+    const openFilePicker = () => {
+        stopPlayback();
+        hideToast();
+        el.fileInput.click();
+    };
+
+    el.waveOpenBtn.addEventListener('click', openFilePicker);
     el.waveEmpty.addEventListener('click', (event) => {
         if (event.target.closest('button')) return;
-        el.fileInput.click();
+        openFilePicker();
     });
     el.fileInput.addEventListener('change', (event) => {
         const file = event.target.files && event.target.files[0];
@@ -5650,7 +5657,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     });
     el.openBtn.addEventListener('click', () => {
         if ((app.clips.length || app.samples.length) && !window.confirm('Открыть другой файл? Фрагменты и сэмплы не сохранятся.')) return;
-        el.fileInput.click();
+        openFilePicker();
     });
 
     ['dragenter', 'dragover'].forEach((type) => {
