@@ -1314,6 +1314,31 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
 
     const dbToGain = (db) => (db === 0 ? 1 : Math.pow(10, db / 20));
+
+    // Пик трека: нужен, чтобы усиление не загоняло сигнал за 0 dBFS
+    function peakOfBuffer(buffer) {
+        let peak = 0;
+        for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+            const data = buffer.getChannelData(ch);
+            for (let i = 0; i < data.length; i += 16) {
+                const v = Math.abs(data[i]);
+                if (v > peak) peak = v;
+            }
+        }
+        return peak || 0;
+    }
+
+    // Усиление с запасом: не даём превысить 0 dBFS, иначе получается грязный клиппинг
+    function safeGain(db) {
+        const wanted = dbToGain(db);
+        if (app.peakBufferId !== app.bufferId) {
+            app.bufferPeak = app.buffer ? peakOfBuffer(app.buffer) : 0;
+            app.peakBufferId = app.bufferId;
+        }
+        const peak = app.bufferPeak || 0;
+        if (peak <= 0.0001) return wanted;
+        return Math.min(wanted, 0.98 / peak);
+    }
     const isLittleEndian = () => new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 
     /* ------------------------------------------------------------ элементы */
@@ -1552,6 +1577,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             low.connect(high);
             high.connect(master);
             master.connect(ctx.destination);
+            player.out = master;
             // сухой путь и путь через дорожки: при 100 % звук идёт напрямую, без фильтров
             const dry = ctx.createGain();
             const wet = ctx.createGain();
@@ -1577,7 +1603,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const when = player.ctx ? player.ctx.currentTime : 0;
         const extra = player.extraGainDb || 0;
         // громкость фрагмента живёт отдельно от громкости трека
-        nodes.pre.gain.setTargetAtTime(dbToGain(app.gainDb + extra), when, 0.01);
+        nodes.pre.gain.setTargetAtTime(safeGain(app.gainDb + extra), when, 0.01);
         nodes.low.gain.setTargetAtTime(app.lowDb, when, 0.01);
         nodes.high.gain.setTargetAtTime(app.highDb, when, 0.01);
         nodes.master.gain.setTargetAtTime(app.volume, when, 0.01);
@@ -5184,7 +5210,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (!mime) { toast('Браузер не умеет писать звук', 'error'); return; }
 
         perf.dest = ctx.createMediaStreamDestination();
-        player.gain.connect(perf.dest);
+        (player.out || player.gain).connect(perf.dest);
         perf.chunks = [];
         perf.recorder = new MediaRecorder(perf.dest.stream, { mimeType: mime });
         perf.recorder.ondataavailable = (event) => { if (event.data && event.data.size) perf.chunks.push(event.data); };
@@ -5591,6 +5617,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             app.buffer = buffer;
             app.bufferId += 1;
             app.originalBuffer = buffer;
+            app.bufferPeak = peakOfBuffer(buffer);
             app.fileName = file.name.replace(/\.[^./\\]+$/, '');
             app.view = { start: 0, end: buffer.duration };
             peakCache = { key: '', min: null, max: null };
