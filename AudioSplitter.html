@@ -5586,14 +5586,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             resizeCanvas();
             draw();
 
-            // никакого автозапуска: играет только по кнопке ▶
             stopPlayback();
-            setTimeout(() => {
-                if (!player.playing) return;
-                stopPlayback();
-                toast('Автозапуск отключён — нажмите ▶', 'warn', 3200);
-            }, 350);
-            toast(`Загружено: ${fmt(buffer.duration, false)} · нажмите ▶, чтобы слушать`, 'ok', 3200);
+            toast(`Загружено: ${fmt(buffer.duration, false)} — играю с начала`, 'ok', 3200)
+            // свежий трек сразу звучит: выбор файла — это и есть действие пользователя
+            playContext = { kind: 'mix' };
+            playRange(0, buffer.duration, soundOptions());;
         } catch (error) {
             console.error(error);
             hideToast();
