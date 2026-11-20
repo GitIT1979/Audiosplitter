@@ -294,13 +294,20 @@
         .layout-bar .spacer { flex: 1; }
         .card .grip {
             display: grid; place-items: center;
-            width: 20px; height: 26px; margin-left: -8px; padding: 0;
+            width: 24px; height: 28px; margin-left: -10px; padding: 0;
             border: 0; border-radius: 6px; background: transparent;
-            color: var(--dim); font-size: 0.95rem; line-height: 1;
+            color: var(--dim); font-size: 1rem; line-height: 1;
             cursor: grab; touch-action: none;
         }
         .card .grip:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
         .card .grip:focus-visible { outline: 2px solid #a855f7; outline-offset: 1px; }
+        /* на десктопе тянуть можно за всю шапку, а не только за ручку */
+        @media (hover: hover) and (pointer: fine) {
+            .card .card-head { cursor: grab; }
+            .card .card-head button, .card .card-head select, .card .card-head input,
+            .card .card-head label, .card .card-head a { cursor: pointer; }
+            .card .card-head .hint { cursor: inherit; }
+        }
         .card.is-dragging { opacity: 0.7; border-color: #a855f7; box-shadow: 0 0 0 1px #a855f7 inset; pointer-events: none; }
         .card.is-dragging .grip { cursor: grabbing; }
         body.cards-dragging { user-select: none; }
@@ -640,7 +647,7 @@
             </section>
 
             <div class="layout-bar">
-                <span class="layout-hint">⠿ Тяните блок за ручку — порядок любой, блоки не накладываются</span>
+                <span class="layout-hint">⠿ Тяните блок за заголовок или ручку — порядок любой, блоки не накладываются</span>
                 <div class="spacer"></div>
                 <label class="check" title="Если снять галочку, при следующей загрузке блоки вернутся в исходный порядок">
                     <input type="checkbox" id="rememberLayout" checked>
@@ -3347,10 +3354,16 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const onCancel = () => stopDrag(false);
 
         el.columns.addEventListener('pointerdown', (event) => {
-            const grip = event.target.closest ? event.target.closest('.grip') : null;
-            if (!grip || event.button > 0) return;
-            const card = grip.closest('.card[data-card]');
-            if (!card) return;
+            const card = event.target.closest ? event.target.closest('.card[data-card]') : null;
+            if (!card || event.button > 0) return;
+            const grip = event.target.closest('.grip');
+            const head = event.target.closest('.card-head');
+            if (!grip && !head) return;
+            // кнопки, списки и поля в шапке работают как обычно
+            if (!grip && event.target.closest('button, input, select, textarea, a, label')) return;
+            // на телефоне тянем только за ручку, иначе страница не листается
+            if (!grip && event.pointerType !== 'mouse') return;
+
             event.preventDefault();
             drag = { card, startOrder: cardList().map((item) => item.dataset.card).join() };
             card.classList.add('is-dragging');
