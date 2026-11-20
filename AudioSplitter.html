@@ -5550,6 +5550,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
 
         app.busy = true;
+        // новый файл выбран — звук сразу замолкает, не дожидаясь декодирования
+        stopPlayback();
         try {
             toast('Декодирование…', 'info', 0);
             const bytes = await file.arrayBuffer();
@@ -5581,7 +5583,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             resizeCanvas();
             draw();
 
-            toast(`Загружено: ${fmt(buffer.duration, false)}, ${(buffer.sampleRate / 1000).toFixed(1)} кГц`, 'ok', 3000);
+            // никакого автозапуска: играет только по кнопке ▶
+            stopPlayback();
+            toast(`Загружено: ${fmt(buffer.duration, false)} · нажмите ▶, чтобы слушать`, 'ok', 3200);
         } catch (error) {
             console.error(error);
             hideToast();
