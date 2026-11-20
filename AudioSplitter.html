@@ -1487,12 +1487,22 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         highsOut.connect(highs);
         highs.connect(out);
 
-        // вокал: моно-сумма (L+R)/2, затем 150 Гц – 8 кГц
-        const mono = ctx.createGain();
-        mono.channelCount = 1;
-        mono.channelCountMode = 'explicit';
-        mono.channelInterpretation = 'speakers';
-        input.connect(mono);
+        // вокал — центр (L+R)/2, собранный явно, без опоры на неявное микширование браузера
+        const splitter = ctx.createChannelSplitter(2);
+        const halfL = ctx.createGain();
+        const halfR = ctx.createGain();
+        halfL.gain.value = 0.5;
+        halfR.gain.value = 0.5;
+        const mid = ctx.createChannelMerger(1);
+        input.connect(splitter);
+        splitter.connect(halfL, 0);
+        splitter.connect(halfR, 1);
+        halfL.connect(mid, 0, 0);
+        halfR.connect(mid, 0, 0);
+        // стерео-копия: одно и то же значение в оба канала
+        const mono = ctx.createChannelMerger(2);
+        mid.connect(mono, 0, 0);
+        mid.connect(mono, 0, 1);
         // вокал — чистый центр: фильтры ломали вычитание, и голос оставался в инструментале
         const vocalOut = mono;
         const vocal = ctx.createGain();
@@ -1542,7 +1552,18 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             low.connect(high);
             high.connect(master);
             master.connect(ctx.destination);
-            player.nodes = { pre, low, high, master, stems: buildStemGraph(ctx, pre) };
+            // сухой путь и путь через дорожки: при 100 % звук идёт напрямую, без фильтров
+            const dry = ctx.createGain();
+            const wet = ctx.createGain();
+            dry.gain.value = 1;
+            wet.gain.value = 0;
+            dry.connect(pre);
+            wet.connect(pre);
+            const stems = buildStemGraph(ctx, wet);
+            const bus = ctx.createGain();
+            bus.connect(dry);
+            bus.connect(stems.input);
+            player.nodes = { pre, low, high, master, dry, wet, bus, stems };
             player.gain = master;
         }
         applyLiveParams();
@@ -1569,6 +1590,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (!stems) return;
         const when = player.ctx ? player.ctx.currentTime : 0;
         const solo = player.stemSolo;
+        // при уровнях 100 % и без соло звук вообще не проходит через фильтры
+        const neutral = !solo && STEMS.every((stem) => Math.abs((app.stemGains[stem.id] ?? 1) - 1) < 1e-4);
+        if (player.nodes.dry) player.nodes.dry.gain.setTargetAtTime(neutral ? 1 : 0, when, 0.012);
+        if (player.nodes.wet) player.nodes.wet.gain.setTargetAtTime(neutral ? 0 : 1, when, 0.012);
         STEMS.forEach((stem) => {
             const node = stems[stem.id];
             if (!node) return;
@@ -2440,7 +2465,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         source.buffer = player.buffer;
         const nodes = player.nodes;
         // при явном соло дорожка уже зашита в буфер — граф обходим
-        const target = nodes ? (player.bypassStems ? nodes.pre : nodes.stems.input) : player.gain;
+        const target = nodes ? (player.bypassStems ? nodes.pre : nodes.bus) : player.gain;
         source.connect(target);
         source.playbackRate.value = app.speed || 1;
         player.speed = app.speed || 1;
