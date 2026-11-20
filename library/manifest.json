@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "created": "2026-11-20",
+  "samples": [
+    {
+      "file": "kick_1.mp3",
+      "title": "Simple Kick Drum",
+      "author": "IanStarGem",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/IanStarGem/sounds/274775",
+      "tags": [
+        "kick"
+      ],
+      "durationMs": 441
+    },
+    {
+      "file": "kick_2.mp3",
+      "title": "Kick Drum",
+      "author": "Poligonstudio",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Poligonstudio/sounds/410149",
+      "tags": [
+        "kick"
+      ],
+      "durationMs": 960
+    },
+    {
+      "file": "snare_1.mp3",
+      "title": "snare drum 4.wav",
+      "author": "KEVOY",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/KEVOY/sounds/82583",
+      "tags": [
+        "snare"
+      ],
+      "durationMs": 1791
+    },
+    {
+      "file": "snare_2.mp3",
+      "title": "Dubstep Snare drum",
+      "author": "Tr4ck3r",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Tr4ck3r/sounds/190592",
+      "tags": [
+        "snare"
+      ],
+      "durationMs": 1056
+    },
+    {
+      "file": "hat_1.mp3",
+      "title": "Zildjian A Custom Hi-Hat Cymbals Closed Hit.WAV",
+      "author": "pjcohen",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/pjcohen/sounds/45664",
+      "tags": [
+        "hat"
+      ],
+      "durationMs": 271
+    },
+    {
+      "file": "hat_2.mp3",
+      "title": "Echoed Hi-Hats",
+      "author": "ani_music",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/ani_music/sounds/165321",
+      "tags": [
+        "hat"
+      ],
+      "durationMs": 870
+    },
+    {
+      "file": "clap_1.mp3",
+      "title": "Hand claps",
+      "author": "parkersenk",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/parkersenk/sounds/452709",
+      "tags": [
+        "clap"
+      ],
+      "durationMs": 6434
+    },
+    {
+      "file": "clap_2.mp3",
+      "title": "Hand Claps",
+      "author": "Jofae",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Jofae/sounds/362954",
+      "tags": [
+        "clap"
+      ],
+      "durationMs": 2291
+    },
+    {
+      "file": "perc_1.mp3",
+      "title": "Matchbox wood shaker percussion one-shot foley sound.wav",
+      "author": "Duisterwho",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Duisterwho/sounds/644706",
+      "tags": [
+        "perc"
+      ],
+      "durationMs": 500
+    },
+    {
+      "file": "perc_2.mp3",
+      "title": "Mentos looping rattle percussion - shaker percussion foley - one shot.wav",
+      "author": "Duisterwho",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Duisterwho/sounds/644668",
+      "tags": [
+        "perc"
+      ],
+      "durationMs": 875
+    },
+    {
+      "file": "keys_1.mp3",
+      "title": "Hard piano note stereo saturated spooky",
+      "author": "tusic99",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/tusic99/sounds/648902",
+      "tags": [
+        "keys"
+      ],
+      "durationMs": 3692
+    },
+    {
+      "file": "keys_2.mp3",
+      "title": "cat piano note c.wav",
+      "author": "meku_a",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/meku_a/sounds/612806",
+      "tags": [
+        "keys"
+      ],
+      "durationMs": 7915
+    },
+    {
+      "file": "noise_1.mp3",
+      "title": "Vinyl Noise, Crackles for Looping",
+      "author": "f-r-a-g-i-l-e",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/f-r-a-g-i-l-e/sounds/474813",
+      "tags": [
+        "noise"
+      ],
+      "durationMs": 7453
+    },
+    {
+      "file": "fx_1.mp3",
+      "title": "Percusive Noise Riser.wav",
+      "author": "Stereo Surgeon",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/261415",
+      "tags": [
+        "fx"
+      ],
+      "durationMs": 5799
+    },
+    {
+      "file": "fx_2.mp3",
+      "title": "Sweep Downwards.wav",
+      "author": "stair",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/stair/sounds/387552",
+      "tags": [
+        "fx"
+      ],
+      "durationMs": 8000
+    }
+  ]
+}

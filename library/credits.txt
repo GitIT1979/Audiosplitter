@@ -1,0 +1,17 @@
+AudioSplitter — библиотека сэмплов
+
+kick_1.mp3 — Simple Kick Drum — IanStarGem — CC0 1.0 — https://freesound.org/people/IanStarGem/sounds/274775
+kick_2.mp3 — Kick Drum — Poligonstudio — CC0 1.0 — https://freesound.org/people/Poligonstudio/sounds/410149
+snare_1.mp3 — snare drum 4.wav — KEVOY — CC0 1.0 — https://freesound.org/people/KEVOY/sounds/82583
+snare_2.mp3 — Dubstep Snare drum — Tr4ck3r — CC0 1.0 — https://freesound.org/people/Tr4ck3r/sounds/190592
+hat_1.mp3 — Zildjian A Custom Hi-Hat Cymbals Closed Hit.WAV — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/45664
+hat_2.mp3 — Echoed Hi-Hats — ani_music — CC0 1.0 — https://freesound.org/people/ani_music/sounds/165321
+clap_1.mp3 — Hand claps — parkersenk — CC0 1.0 — https://freesound.org/people/parkersenk/sounds/452709
+clap_2.mp3 — Hand Claps — Jofae — CC0 1.0 — https://freesound.org/people/Jofae/sounds/362954
+perc_1.mp3 — Matchbox wood shaker percussion one-shot foley sound.wav — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/644706
+perc_2.mp3 — Mentos looping rattle percussion - shaker percussion foley - one shot.wav — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/644668
+keys_1.mp3 — Hard piano note stereo saturated spooky — tusic99 — CC0 1.0 — https://freesound.org/people/tusic99/sounds/648902
+keys_2.mp3 — cat piano note c.wav — meku_a — CC0 1.0 — https://freesound.org/people/meku_a/sounds/612806
+noise_1.mp3 — Vinyl Noise, Crackles for Looping — f-r-a-g-i-l-e — CC0 1.0 — https://freesound.org/people/f-r-a-g-i-l-e/sounds/474813
+fx_1.mp3 — Percusive Noise Riser.wav — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/261415
+fx_2.mp3 — Sweep Downwards.wav — stair — CC0 1.0 — https://freesound.org/people/stair/sounds/387552
