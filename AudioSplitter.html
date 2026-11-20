@@ -278,7 +278,18 @@
 
         /* ---------- колонки ---------- */
 
-                .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; align-items: start; }
+        /* Поле раскладки: карточки стоят свободно в координатах, поле растёт вниз */
+        .columns { position: relative; display: block; min-height: 120px; }
+        .columns > .card { position: absolute; left: 0; top: 0; margin: 0; }
+        .columns > .card.is-dragging { z-index: 6; opacity: 0.96; box-shadow: 0 22px 44px rgba(0, 0, 0, 0.5); pointer-events: none; }
+        /* призраки: куда встанет блок и куда сдвинутся задетые карточки */
+        .layout-ghost {
+            position: absolute; border-radius: var(--radius); pointer-events: none;
+            transition: left 0.14s ease, top 0.14s ease, width 0.14s ease, height 0.14s ease;
+        }
+        .layout-ghost[hidden] { display: none; }
+        .layout-ghost.is-target { border: 2px dashed var(--accent); background: rgba(168, 85, 247, 0.12); z-index: 4; }
+        .layout-ghost.is-shift { border: 1px dashed rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.03); z-index: 3; }
 
         /* Порядок блоков: перетаскивание за ручку, без наложения */
         .layout-bar {
@@ -289,6 +300,14 @@
         .layout-bar .check input { accent-color: #a855f7; cursor: pointer; }
         .layout-bar .check:hover { color: var(--text); }
         .layout-bar .spacer { flex: 1; }
+        .layout-cols {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 4px 2px 8px; border: 1px solid var(--line); border-radius: 10px;
+        }
+        .layout-cols-label { margin-right: 4px; }
+        .layout-cols #colsLabel { min-width: 14px; text-align: center; font-variant-numeric: tabular-nums; color: var(--text); }
+        .layout-cols .icon-btn { width: 24px; height: 24px; font-size: 0.9rem; }
+        .layout-cols .icon-btn:disabled { opacity: 0.35; cursor: default; }
         .card .grip {
             display: grid; place-items: center;
             width: 24px; height: 28px; margin-left: -10px; padding: 0;
@@ -310,8 +329,6 @@
         body.cards-dragging { user-select: none; }
         body.cards-dragging * { cursor: grabbing !important; }
         @media (max-width: 720px) { .layout-hint { display: none; } }
-        /* все карточки одной ширины: любой порядок даёт ровные ряды без дырок */
-        .columns > .card { margin-bottom: 0; }
         .card-sep { height: 1px; background: var(--line); margin: 6px 0 0; }
 
         /* ---------- фрагменты ---------- */
@@ -640,6 +657,12 @@
             <div class="layout-bar">
                 <span class="layout-hint">⠿ Тяните блок за заголовок или ручку — порядок любой, блоки не накладываются</span>
                 <div class="spacer"></div>
+                <span class="layout-cols" title="Сколько колонок в поле раскладки">
+                    <span class="layout-cols-label">Поле</span>
+                    <button type="button" class="icon-btn" id="colsLess" aria-label="Уже поле">−</button>
+                    <span id="colsLabel">3</span>
+                    <button type="button" class="icon-btn" id="colsMore" aria-label="Шире поле">+</button>
+                </span>
                 <label class="check" title="Если снять галочку, при следующей загрузке блоки вернутся в исходный порядок">
                     <input type="checkbox" id="rememberLayout" checked>
                     <span>Помнить порядок</span>
@@ -1258,6 +1281,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         waveWrap: $('waveWrap'), wave: $('wave'), waveHint: $('waveHint'),
         selBar: $('selBar'), selText: $('selText'), selPlay: $('selPlay'), selAdd: $('selAdd'), selCut: $('selCut'), selDelete: $('selDelete'), selClear: $('selClear'), selTrim: $('selTrim'),
         columns: document.querySelector('.columns'), rememberLayout: $('rememberLayout'), resetLayout: $('resetLayout'),
+        colsLess: $('colsLess'), colsMore: $('colsMore'), colsLabel: $('colsLabel'),
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
@@ -3241,62 +3265,240 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         toast(`Удалено ${fmt(cut)} — трек стал ${fmt(app.buffer.duration)}`, 'ok', 3200);
     }
 
-    // ——— Порядок блоков: тянуть за ручку, запоминать, сбрасывать ———
-    const CARD_ORDER_KEY = 'audioSplitter.cardOrder.v1';
-    const CARD_DEFAULT_ORDER = ['clips', 'mix', 'stems', 'voice', 'sound', 'library'];
+    // ——— Свободная раскладка: карточки стоят в координатах поля, поле растёт ———
+    const LAYOUT_KEY = 'audioSplitter.cardLayout.v2';
+    const LAYOUT_ORDER_KEY = 'audioSplitter.cardOrder.v1';
+    const LAYOUT_GAP = 14;
+    const LAYOUT_MIN_W = 318;
+    const LAYOUT_MAX_COLS = 4;
+    const layout = { cols: 0, cards: {} };
 
     function cardList() {
         return [...el.columns.querySelectorAll(':scope > .card[data-card]')];
     }
 
-    function applyCardOrder(order) {
-        const cards = new Map(cardList().map((card) => [card.dataset.card, card]));
-        const fragment = document.createDocumentFragment();
-        order.forEach((key) => {
-            const card = cards.get(key);
-            if (!card) return;
-            cards.delete(key);
-            fragment.appendChild(card);
-        });
-        cards.forEach((card) => fragment.appendChild(card));
-        el.columns.appendChild(fragment);
+    function boardWidth() {
+        return el.columns ? el.columns.clientWidth : 0;
     }
 
-    function saveCardOrder() {
+    // сколько колонок влезает в текущую ширину без сжатия карточек
+    function fitCols() {
+        const width = boardWidth();
+        if (!width) return 1;
+        const fit = Math.floor((width + LAYOUT_GAP) / (LAYOUT_MIN_W + LAYOUT_GAP));
+        return Math.max(1, Math.min(LAYOUT_MAX_COLS, fit));
+    }
+
+    function effCols() {
+        return Math.max(1, Math.min(layout.cols || fitCols(), fitCols()));
+    }
+
+    function colWidth() {
+        const cols = effCols();
+        const width = boardWidth();
+        return Math.max(160, (width - (cols - 1) * LAYOUT_GAP) / cols);
+    }
+
+    function colX(col) {
+        return Math.round(col * (colWidth() + LAYOUT_GAP));
+    }
+
+    function cardState(card) {
+        const key = card.dataset.card;
+        if (!layout.cards[key]) layout.cards[key] = { col: 0, y: 0 };
+        return layout.cards[key];
+    }
+
+    // Колонка с учётом текущей ширины поля: желаемая сохраняется, пока поле не сузили
+    function colOf(card) {
+        return clamp(cardState(card).col, 0, effCols() - 1);
+    }
+
+    // Плавный перенос: считаем где было, ставим где стало, анимируем разницу
+    function flipFrom(before) {
+        cardList().forEach((card) => {
+            const prev = before.get(card);
+            if (!prev) return;
+            const now = card.getBoundingClientRect();
+            const dx = prev.left - now.left;
+            const dy = prev.top - now.top;
+            if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+            if (typeof card.animate !== 'function') return;
+            card.animate(
+                [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+                { duration: 300, easing: 'cubic-bezier(.2, .8, .25, 1)' }
+            );
+        });
+    }
+
+    // Никаких наложений: внутри колонки карточки стоят друг над другом
+    function settle() {
+        const cols = effCols();
+        for (let col = 0; col < cols; col++) {
+            const items = cardList()
+                .filter((card) => colOf(card) === col)
+                .sort((a, b) => cardState(a).y - cardState(b).y);
+            let cursor = 0;
+            items.forEach((card) => {
+                const state = cardState(card);
+                if (state.y < cursor) state.y = cursor;
+                cursor = state.y + card.offsetHeight + LAYOUT_GAP;
+            });
+        }
+    }
+
+    // Перекладка колонок с нуля: порядок сохраняется, пустоты убираются
+    function packColumns() {
+        const cols = effCols();
+        for (let col = 0; col < cols; col++) {
+            const items = cardList()
+                .filter((card) => colOf(card) === col)
+                .sort((a, b) => cardState(a).y - cardState(b).y);
+            let cursor = 0;
+            items.forEach((card) => {
+                const state = cardState(card);
+                state.y = cursor;
+                cursor += card.offsetHeight + LAYOUT_GAP;
+            });
+        }
+    }
+
+    function relayout(animate) {
+        if (!el.columns || !cardList().length) return;
+        const before = animate ? new Map(cardList().map((card) => [card, card.getBoundingClientRect()])) : null;
+        const cols = effCols();
+        const width = colWidth();
+        cardList().forEach((card) => {
+            const state = cardState(card);
+            state.y = Math.max(0, Math.round(state.y));
+            card.style.width = width + 'px';
+        });
+        settle();
+        let bottom = 0;
+        cardList().forEach((card) => {
+            const state = cardState(card);
+            card.style.left = colX(colOf(card)) + 'px';
+            card.style.top = state.y + 'px';
+            bottom = Math.max(bottom, state.y + card.offsetHeight);
+        });
+        el.columns.style.height = Math.max(0, bottom) + 'px';
+        if (before) flipFrom(before);
+    }
+
+    // Раскладка по умолчанию: карточки по самой короткой колонке
+    function defaultLayout() {
+        layout.cols = fitCols();
+        layout.cards = {};
+        const cols = layout.cols;
+        const width = colWidth();
+        const heights = new Array(cols).fill(0);
+        cardList().forEach((card) => { card.style.width = width + 'px'; });
+        cardList().forEach((card) => {
+            let col = 0;
+            for (let i = 1; i < cols; i++) if (heights[i] < heights[col] - 1) col = i;
+            layout.cards[card.dataset.card] = { col, y: heights[col] };
+            heights[col] += card.offsetHeight + LAYOUT_GAP;
+        });
+    }
+
+    function saveLayout() {
         try {
-            if (!el.rememberLayout.checked) {
-                localStorage.removeItem(CARD_ORDER_KEY);
-                return;
-            }
-            localStorage.setItem(CARD_ORDER_KEY, JSON.stringify(cardList().map((card) => card.dataset.card)));
+            if (!el.rememberLayout.checked) { localStorage.removeItem(LAYOUT_KEY); return; }
+            localStorage.setItem(LAYOUT_KEY, JSON.stringify({ cols: layout.cols, cards: layout.cards }));
         } catch (error) { /* приватный режим — просто не запоминаем */ }
     }
 
-    function restoreCardLayout() {
+    function restoreLayout() {
         let saved = null;
-        try { saved = JSON.parse(localStorage.getItem(CARD_ORDER_KEY) || 'null'); } catch (error) { saved = null; }
-        if (Array.isArray(saved) && saved.length) applyCardOrder([...saved, ...CARD_DEFAULT_ORDER]);
-    }
+        try { saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null'); } catch (error) { saved = null; }
 
-    function gridColumns() {
-        const cards = cardList();
-        if (cards.length < 2) return 1;
-        // берём самую заполненную строку: карточка на всю ширину не должна сбивать расчёт
-        const rows = [];
-        cards.forEach((card) => {
-            const top = Math.round(card.getBoundingClientRect().top);
-            const row = rows.find((item) => Math.abs(item.top - top) < 8);
-            if (row) row.count += 1;
-            else rows.push({ top, count: 1 });
-        });
-        return Math.max(...rows.map((row) => row.count));
+        // старый порядок из версии с сеткой: переносим как последовательность
+        let order = null;
+        try { order = JSON.parse(localStorage.getItem(LAYOUT_ORDER_KEY) || 'null'); } catch (error) { order = null; }
+        if (Array.isArray(order) && order.length) {
+            const map = new Map(cardList().map((card) => [card.dataset.card, card]));
+            const fragment = document.createDocumentFragment();
+            order.forEach((key) => {
+                const card = map.get(key);
+                if (!card) return;
+                map.delete(key);
+                fragment.appendChild(card);
+            });
+            map.forEach((card) => fragment.appendChild(card));
+            el.columns.appendChild(fragment);
+        }
+
+        if (saved && saved.cards && typeof saved.cards === 'object') {
+            layout.cols = Number(saved.cols) || 0;
+            layout.cards = {};
+            Object.keys(saved.cards).forEach((key) => {
+                const value = saved.cards[key];
+                if (!value) return;
+                layout.cards[key] = { col: Number(value.col) || 0, y: Number(value.y) || 0 };
+            });
+            // карточки, которых не было в сохранении, встают в конец своих колонок
+            cardList().forEach((card) => {
+                const key = card.dataset.card;
+                if (layout.cards[key]) return;
+                const state = { col: 0, y: 0 };
+                cardList().forEach((other) => {
+                    const s = layout.cards[other.dataset.card];
+                    if (s && other !== card) state.y = Math.max(state.y, s.y + other.offsetHeight + LAYOUT_GAP);
+                });
+                layout.cards[key] = state;
+            });
+        } else {
+            defaultLayout();
+        }
     }
 
     function initCardLayout() {
         if (!el.columns || !el.rememberLayout || !el.resetLayout) return;
-        restoreCardLayout();
+
+        restoreLayout();
+        relayout(false);
+
+        const updateColsUi = () => {
+            if (!el.colsLabel) return;
+            el.colsLabel.textContent = String(effCols());
+            el.colsLess.disabled = effCols() <= 1;
+            el.colsMore.disabled = effCols() >= fitCols();
+        };
+
+        // призраки: цель и карточки, которые сдвинутся
+        const targetGhost = document.createElement('div');
+        targetGhost.className = 'layout-ghost is-target';
+        targetGhost.hidden = true;
+        el.columns.appendChild(targetGhost);
+        const shiftGhosts = [];
+        const shiftGhost = (index) => {
+            if (!shiftGhosts[index]) {
+                const node = document.createElement('div');
+                node.className = 'layout-ghost is-shift';
+                el.columns.appendChild(node);
+                shiftGhosts[index] = node;
+            }
+            return shiftGhosts[index];
+        };
+        const hideGhosts = () => {
+            targetGhost.hidden = true;
+            shiftGhosts.forEach((node) => { node.hidden = true; });
+        };
 
         let drag = null;
+        let resizeTimer = 0;
+        let fixTimer = 0;
+
+        // Пересчёт раскладки не зависит от кадров: списки перерисовались — сразу разводим карточки
+        const scheduleLayoutFix = () => {
+            if (drag) return;
+            clearTimeout(fixTimer);
+            fixTimer = setTimeout(() => {
+                if (drag) return;
+                settle();
+                relayout(true);
+            }, 50);
+        };
 
         // автопрокрутка, когда тянем блок к краю экрана
         const autoScroll = (y) => {
@@ -3305,40 +3507,89 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             else if (y > window.innerHeight - edge) window.scrollBy(0, Math.ceil((y - (window.innerHeight - edge)) / 5));
         };
 
+        // Куда реально встанет блок и кто сдвинется: считаем тем же правилом, что и после броска
+        const previewLanding = (card, targetCol, targetY) => {
+            const others = cardList()
+                .filter((item) => item !== card && colOf(item) === targetCol)
+                .map((item) => ({ card: item, y: cardState(item).y, h: item.offsetHeight, was: cardState(item).y }))
+                .sort((a, b) => a.y - b.y);
+            const list = [...others, { card, y: targetY, h: card.offsetHeight, dragged: true }]
+                .sort((a, b) => a.y - b.y);
+
+            let cursor = 0;
+            let draggedY = targetY;
+            const shifts = [];
+            list.forEach((item) => {
+                if (item.y < cursor) item.y = cursor;
+                cursor = item.y + item.h + LAYOUT_GAP;
+                if (item.dragged) draggedY = item.y;
+                else if (item.y !== item.was) shifts.push({ card: item.card, y: item.y });
+            });
+            return { draggedY, shifts };
+        };
+
         const onMove = (event) => {
             if (!drag) return;
             event.preventDefault();
             autoScroll(event.clientY);
-            const under = document.elementFromPoint(event.clientX, event.clientY);
-            const target = under && under.closest ? under.closest('.card[data-card]') : null;
-            if (!target || target === drag.card || target.parentElement !== el.columns) return;
 
-            const rect = target.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            // в сетке сравниваем, куда курсор ближе — по горизонтали или по вертикали
-            const dx = Math.abs(event.clientX - cx) / Math.max(rect.width, 1);
-            const dy = Math.abs(event.clientY - cy) / Math.max(rect.height, 1);
-            const after = gridColumns() > 1
-                ? (dx > dy ? event.clientX > cx : event.clientY > cy)
-                : event.clientY > cy;
+            const board = el.columns.getBoundingClientRect();
+            const width = colWidth();
+            const card = drag.card;
+            const height = card.offsetHeight;
 
-            if (after) target.after(drag.card);
-            else target.before(drag.card);
+            // карточка свободно следует за курсором
+            const left = event.clientX - drag.grabX - board.left;
+            const top = Math.max(0, event.clientY - drag.grabY - board.top);
+            card.style.left = left + 'px';
+            card.style.top = top + 'px';
+
+            // цель: ближайшая колонка и свободная высота
+            const cols = effCols();
+            const targetCol = clamp(Math.round(left / (width + LAYOUT_GAP)), 0, cols - 1);
+            const targetY = Math.max(0, Math.round(top / 4) * 4);
+            const landing = previewLanding(card, targetCol, targetY);
+            drag.target = { col: targetCol, y: landing.draggedY };
+
+            targetGhost.style.left = colX(targetCol) + 'px';
+            targetGhost.style.top = landing.draggedY + 'px';
+            targetGhost.style.width = width + 'px';
+            targetGhost.style.height = height + 'px';
+            targetGhost.hidden = false;
+
+            const shifted = landing.shifts;
+            drag.shifted = shifted;
+            shiftGhosts.forEach((node) => { node.hidden = true; });
+            shifted.forEach((item, index) => {
+                const node = shiftGhost(index);
+                node.style.left = colX(targetCol) + 'px';
+                node.style.top = item.y + 'px';
+                node.style.width = width + 'px';
+                node.style.height = item.card.offsetHeight + 'px';
+                node.hidden = false;
+            });
         };
 
         const stopDrag = (commit) => {
             if (!drag) return;
-            drag.card.classList.remove('is-dragging');
+            const { card, target, shifted } = drag;
+            card.classList.remove('is-dragging');
             document.body.classList.remove('cards-dragging');
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
             window.removeEventListener('pointercancel', onCancel);
-            const changed = cardList().map((card) => card.dataset.card).join() !== drag.startOrder;
+            hideGhosts();
             drag = null;
-            if (commit && changed) {
-                saveCardOrder();
-                toast('Порядок блоков обновлён', 'ok', 1600);
+
+            if (commit && target) {
+                const state = cardState(card);
+                state.col = target.col;
+                state.y = target.y;
+                (shifted || []).forEach((item) => { cardState(item.card).y = item.y; });
+                relayout(true);
+                saveLayout();
+            } else {
+                relayout(true);
             }
         };
         const onUp = () => stopDrag(true);
@@ -3356,7 +3607,15 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             if (!grip && event.pointerType !== 'mouse') return;
 
             event.preventDefault();
-            drag = { card, startOrder: cardList().map((item) => item.dataset.card).join() };
+            const rect = card.getBoundingClientRect();
+            drag = {
+                card,
+                grabX: event.clientX - rect.left,
+                grabY: event.clientY - rect.top,
+                target: null,
+                shifted: [],
+            };
+            card.style.width = colWidth() + 'px';
             card.classList.add('is-dragging');
             document.body.classList.add('cards-dragging');
             window.addEventListener('pointermove', onMove, { passive: false });
@@ -3364,39 +3623,103 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             window.addEventListener('pointercancel', onCancel);
         });
 
-        // клавиатура: Ctrl + ← / → двигает блок, когда ручка в фокусе
+        // клавиатура: Ctrl + ← / → — другая колонка, Ctrl + ↑ / ↓ — сдвиг по высоте
         el.columns.addEventListener('keydown', (event) => {
             const grip = event.target.closest ? event.target.closest('.grip') : null;
-            if (!grip || !event.ctrlKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+            if (!grip || !event.ctrlKey) return;
             const card = grip.closest('.card[data-card]');
             if (!card) return;
-            event.preventDefault();
-            if (event.key === 'ArrowLeft' && card.previousElementSibling) {
-                el.columns.insertBefore(card, card.previousElementSibling);
-            } else if (event.key === 'ArrowRight' && card.nextElementSibling) {
-                el.columns.insertBefore(card.nextElementSibling, card);
+            const state = cardState(card);
+            const cols = effCols();
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                state.col = clamp(state.col - 1, 0, cols - 1);
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                state.col = clamp(state.col + 1, 0, cols - 1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                state.y = Math.max(0, state.y - 40);
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                state.y += 40;
+            } else {
+                return;
             }
-            saveCardOrder();
+            relayout(true);
+            saveLayout();
             grip.focus();
         });
 
         el.rememberLayout.addEventListener('change', () => {
             if (el.rememberLayout.checked) {
-                saveCardOrder();
-                toast('Порядок блоков запомнится', 'ok', 2000);
+                saveLayout();
+                toast('Раскладка запомнится', 'ok', 2000);
             } else {
-                try { localStorage.removeItem(CARD_ORDER_KEY); } catch (error) { /* ignore */ }
-                toast('При следующей загрузке — исходный порядок', 'ok', 2600);
+                try { localStorage.removeItem(LAYOUT_KEY); } catch (error) { /* ignore */ }
+                toast('При следующей загрузке — исходная раскладка', 'ok', 2600);
             }
         });
 
+        const changeCols = (next) => {
+            layout.cols = clamp(next, 1, Math.max(1, fitCols()));
+            packColumns();
+            relayout(true);
+            saveLayout();
+            updateColsUi();
+        };
+        if (el.colsLess) el.colsLess.addEventListener('click', () => changeCols(effCols() - 1));
+        if (el.colsMore) el.colsMore.addEventListener('click', () => changeCols(effCols() + 1));
+
         el.resetLayout.addEventListener('click', () => {
-            applyCardOrder(CARD_DEFAULT_ORDER);
-            saveCardOrder();
-            toast('Блоки вернулись в исходный порядок', 'ok', 2200);
+            defaultLayout();
+            relayout(true);
+            saveLayout();
+            updateColsUi();
+            toast('Блоки вернулись в исходную раскладку', 'ok', 2200);
+        });
+
+        // карточка выросла (список, дорожки) — разводим соседей, чтобы не наезжали
+        if (typeof ResizeObserver === 'function') {
+            const heights = new Map();
+            let timer = 0;
+            const observer = new ResizeObserver(() => {
+                let changed = false;
+                cardList().forEach((card) => {
+                    const height = card.offsetHeight;
+                    if (heights.get(card) !== height) { heights.set(card, height); changed = true; }
+                });
+                if (!changed) return;
+                clearTimeout(timer);
+                timer = setTimeout(() => { settle(); relayout(true); }, 80);
+            });
+            cardList().forEach((card) => observer.observe(card));
+        }
+
+        if (typeof MutationObserver === 'function') {
+            const observer = new MutationObserver((records) => {
+                const onlyGhosts = records.every((record) => [...record.addedNodes, ...record.removedNodes]
+                    .every((node) => node.nodeType !== 1 || node.classList.contains('layout-ghost')));
+                if (onlyGhosts) return;
+                scheduleLayoutFix();
+            });
+            observer.observe(el.columns, { childList: true, subtree: true });
+        }
+
+        scheduleLayoutFix();
+        updateColsUi();
+
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const before = effCols();
+                if (layout.cols > fitCols()) layout.cols = fitCols();
+                if (effCols() !== before) packColumns(); else settle();
+                relayout(false);
+                updateColsUi();
+            }, 140);
         });
     }
-
     // Обрезка: оставить только выделенное, остальное отбросить
     function trimToSelection() {
         if (!selectionValid()) { toast('Сначала выделите участок на волне', 'error'); return; }
