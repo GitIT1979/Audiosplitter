@@ -3,184 +3,28 @@
   "created": "2026-11-20",
   "samples": [
     {
-      "file": "kick_1.mp3",
-      "title": "Simple Kick Drum",
-      "author": "IanStarGem",
+      "file": "arp_1.mp3",
+      "title": "guitar arpeggio C.wav",
+      "author": "Lucks86",
       "license": "CC0 1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/IanStarGem/sounds/274775",
+      "source": "https://freesound.org/people/Lucks86/sounds/246268",
       "tags": [
-        "kick"
+        "arp"
       ],
-      "durationMs": 441
+      "durationMs": 5760
     },
     {
-      "file": "kick_2.mp3",
-      "title": "Kick Drum",
-      "author": "Poligonstudio",
+      "file": "arp_2.mp3",
+      "title": "Arpeggio 01.wav",
+      "author": "Accorman",
       "license": "CC0 1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Poligonstudio/sounds/410149",
+      "source": "https://freesound.org/people/Accorman/sounds/573646",
       "tags": [
-        "kick"
+        "arp"
       ],
-      "durationMs": 960
-    },
-    {
-      "file": "snare_1.mp3",
-      "title": "snare drum 4.wav",
-      "author": "KEVOY",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/KEVOY/sounds/82583",
-      "tags": [
-        "snare"
-      ],
-      "durationMs": 1791
-    },
-    {
-      "file": "snare_2.mp3",
-      "title": "Dubstep Snare drum",
-      "author": "Tr4ck3r",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Tr4ck3r/sounds/190592",
-      "tags": [
-        "snare"
-      ],
-      "durationMs": 1056
-    },
-    {
-      "file": "hat_1.mp3",
-      "title": "Zildjian A Custom Hi-Hat Cymbals Closed Hit.WAV",
-      "author": "pjcohen",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/pjcohen/sounds/45664",
-      "tags": [
-        "hat"
-      ],
-      "durationMs": 271
-    },
-    {
-      "file": "hat_2.mp3",
-      "title": "Echoed Hi-Hats",
-      "author": "ani_music",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/ani_music/sounds/165321",
-      "tags": [
-        "hat"
-      ],
-      "durationMs": 870
-    },
-    {
-      "file": "clap_1.mp3",
-      "title": "Hand claps",
-      "author": "parkersenk",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/parkersenk/sounds/452709",
-      "tags": [
-        "clap"
-      ],
-      "durationMs": 6434
-    },
-    {
-      "file": "clap_2.mp3",
-      "title": "Hand Claps",
-      "author": "Jofae",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Jofae/sounds/362954",
-      "tags": [
-        "clap"
-      ],
-      "durationMs": 2291
-    },
-    {
-      "file": "perc_1.mp3",
-      "title": "Matchbox wood shaker percussion one-shot foley sound.wav",
-      "author": "Duisterwho",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Duisterwho/sounds/644706",
-      "tags": [
-        "perc"
-      ],
-      "durationMs": 500
-    },
-    {
-      "file": "perc_2.mp3",
-      "title": "Mentos looping rattle percussion - shaker percussion foley - one shot.wav",
-      "author": "Duisterwho",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Duisterwho/sounds/644668",
-      "tags": [
-        "perc"
-      ],
-      "durationMs": 875
-    },
-    {
-      "file": "keys_1.mp3",
-      "title": "Hard piano note stereo saturated spooky",
-      "author": "tusic99",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/tusic99/sounds/648902",
-      "tags": [
-        "keys"
-      ],
-      "durationMs": 3692
-    },
-    {
-      "file": "keys_2.mp3",
-      "title": "cat piano note c.wav",
-      "author": "meku_a",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/meku_a/sounds/612806",
-      "tags": [
-        "keys"
-      ],
-      "durationMs": 7915
-    },
-    {
-      "file": "noise_1.mp3",
-      "title": "Vinyl Noise, Crackles for Looping",
-      "author": "f-r-a-g-i-l-e",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/f-r-a-g-i-l-e/sounds/474813",
-      "tags": [
-        "noise"
-      ],
-      "durationMs": 7453
-    },
-    {
-      "file": "fx_1.mp3",
-      "title": "Percusive Noise Riser.wav",
-      "author": "Stereo Surgeon",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/261415",
-      "tags": [
-        "fx"
-      ],
-      "durationMs": 5799
-    },
-    {
-      "file": "fx_2.mp3",
-      "title": "Sweep Downwards.wav",
-      "author": "stair",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/stair/sounds/387552",
-      "tags": [
-        "fx"
-      ],
-      "durationMs": 8000
+      "durationMs": 10170
     },
     {
       "file": "bass_1.mp3",
@@ -195,102 +39,6 @@
       "durationMs": 3879
     },
     {
-      "file": "synth_1.mp3",
-      "title": "Synth Stab 1",
-      "author": "Stereo Surgeon",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/265675",
-      "tags": [
-        "synth"
-      ],
-      "durationMs": 1875
-    },
-    {
-      "file": "crash_1.mp3",
-      "title": "cymbal-reversed-glassy-resonance.wav",
-      "author": "burnttoys",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/burnttoys/sounds/9523",
-      "tags": [
-        "crash"
-      ],
-      "durationMs": 3158
-    },
-    {
-      "file": "tom_1.mp3",
-      "title": "Yamaha Oak Custom Tom Mid.wav",
-      "author": "pjcohen",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/pjcohen/sounds/46554",
-      "tags": [
-        "tom"
-      ],
-      "durationMs": 1816
-    },
-    {
-      "file": "conga_1.mp3",
-      "title": "Kygo Tropical Conga Percussion Hit",
-      "author": "Cloud-10",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Cloud-10/sounds/678748",
-      "tags": [
-        "conga"
-      ],
-      "durationMs": 807
-    },
-    {
-      "file": "block_1.mp3",
-      "title": "Wood block hit",
-      "author": "thomasjaunism",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/thomasjaunism/sounds/218460",
-      "tags": [
-        "block"
-      ],
-      "durationMs": 284
-    },
-    {
-      "file": "vox_1.mp3",
-      "title": "ahh.wav",
-      "author": "filmbetrachterin",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/filmbetrachterin/sounds/414227",
-      "tags": [
-        "vox"
-      ],
-      "durationMs": 3520
-    },
-    {
-      "file": "riser_1.mp3",
-      "title": "Riser Noise FX",
-      "author": "NecoKen1",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/NecoKen1/sounds/627729",
-      "tags": [
-        "riser"
-      ],
-      "durationMs": 9000
-    },
-    {
-      "file": "click_1.mp3",
-      "title": "MPC Metronome click",
-      "author": "trader_one",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/trader_one/sounds/684106",
-      "tags": [
-        "click"
-      ],
-      "durationMs": 22
-    },
-    {
       "file": "bell_1.mp3",
       "title": "Sleigh bells hit",
       "author": "Selector",
@@ -303,412 +51,16 @@
       "durationMs": 882
     },
     {
-      "file": "snap_1.mp3",
-      "title": "Percussion Snap",
-      "author": "purpleducttapehat",
+      "file": "block_1.mp3",
+      "title": "Wood block hit",
+      "author": "thomasjaunism",
       "license": "CC0 1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/purpleducttapehat/sounds/272114",
+      "source": "https://freesound.org/people/thomasjaunism/sounds/218460",
       "tags": [
-        "snap"
+        "block"
       ],
-      "durationMs": 1555
-    },
-    {
-      "file": "loop_1.mp3",
-      "title": "Tribe Drum Loop",
-      "author": "PearceWilsonKing",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/PearceWilsonKing/sounds/342465",
-      "tags": [
-        "loop"
-      ],
-      "durationMs": 8275
-    },
-    {
-      "file": "scratch_1.mp3",
-      "title": "Vocal scratch voice vinyl scratching one shot",
-      "author": "Duisterwho",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Duisterwho/sounds/641343",
-      "tags": [
-        "scratch"
-      ],
-      "durationMs": 2750
-    },
-    {
-      "file": "horn_1.mp3",
-      "title": "Horn Stabs Entrance",
-      "author": "bevibeldesign",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/bevibeldesign/sounds/350433",
-      "tags": [
-        "horn"
-      ],
-      "durationMs": 1719
-    },
-    {
-      "file": "flute_1.mp3",
-      "title": "Flute Play C - 14.wav",
-      "author": "cms4f",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/cms4f/sounds/159136",
-      "tags": [
-        "flute"
-      ],
-      "durationMs": 5200
-    },
-    {
-      "file": "string_1.mp3",
-      "title": "string pizzicato",
-      "author": "PhonosUPF",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/PhonosUPF/sounds/498490",
-      "tags": [
-        "string"
-      ],
-      "durationMs": 923
-    },
-    {
-      "file": "fx_3.mp3",
-      "title": "Deep Whoosh #1",
-      "author": "Kinoton",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Kinoton/sounds/351256",
-      "tags": [
-        "fx"
-      ],
-      "durationMs": 3155
-    },
-    {
-      "file": "kick_3.mp3",
-      "title": "SH01a Bass Drum 004",
-      "author": "ANARKYA",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/ANARKYA/sounds/459895",
-      "tags": [
-        "kick"
-      ],
-      "durationMs": 904
-    },
-    {
-      "file": "kick_4.mp3",
-      "title": "ONE SHOT 2.wav",
-      "author": "Newangelsociety",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Newangelsociety/sounds/65477",
-      "tags": [
-        "kick"
-      ],
-      "durationMs": 1714
-    },
-    {
-      "file": "snare_3.mp3",
-      "title": "snare hit a.wav",
-      "author": "lofabred",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/lofabred/sounds/12817",
-      "tags": [
-        "snare"
-      ],
-      "durationMs": 787
-    },
-    {
-      "file": "snare_4.mp3",
-      "title": "Snare Hit",
-      "author": "deadpoetsocietyband",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/deadpoetsocietyband/sounds/128976",
-      "tags": [
-        "snare"
-      ],
-      "durationMs": 2025
-    },
-    {
-      "file": "hat_3.mp3",
-      "title": "Chimbal Fechado - Closed Hi-Hat",
-      "author": "gilblack1234",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/gilblack1234/sounds/527797",
-      "tags": [
-        "hat"
-      ],
-      "durationMs": 165
-    },
-    {
-      "file": "hat_4.mp3",
-      "title": "Yamaha PSR-36 Closed Hi-Hat",
-      "author": "Joao_Janz",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Joao_Janz/sounds/477891",
-      "tags": [
-        "hat"
-      ],
-      "durationMs": 125
-    },
-    {
-      "file": "clap_3.mp3",
-      "title": "soft noise clap",
-      "author": "Saltbearer",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Saltbearer/sounds/477808",
-      "tags": [
-        "clap"
-      ],
-      "durationMs": 1709
-    },
-    {
-      "file": "clap_4.mp3",
-      "title": "soft noise clap with filters",
-      "author": "Saltbearer",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Saltbearer/sounds/477809",
-      "tags": [
-        "clap"
-      ],
-      "durationMs": 1690
-    },
-    {
-      "file": "rim_1.mp3",
-      "title": "Rimshot (sweet)",
-      "author": "Sajmund",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Sajmund/sounds/132418",
-      "tags": [
-        "rim"
-      ],
-      "durationMs": 1072
-    },
-    {
-      "file": "rim_2.mp3",
-      "title": "Sting, rimshot, drum roll (smooth)",
-      "author": "tlwmdbt",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/tlwmdbt/sounds/440829",
-      "tags": [
-        "rim"
-      ],
-      "durationMs": 5333
-    },
-    {
-      "file": "tom_2.mp3",
-      "title": "TOM HITS 01.wav",
-      "author": "HUMANOISEMAKER",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/HUMANOISEMAKER/sounds/530692",
-      "tags": [
-        "tom"
-      ],
-      "durationMs": 2750
-    },
-    {
-      "file": "tom_3.mp3",
-      "title": "TOM HITS 03.wav",
-      "author": "HUMANOISEMAKER",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/HUMANOISEMAKER/sounds/530694",
-      "tags": [
-        "tom"
-      ],
-      "durationMs": 5000
-    },
-    {
-      "file": "crash_2.mp3",
-      "title": "Reversed Crash Cymbal",
-      "author": "TheEndOfACycle",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/TheEndOfACycle/sounds/674291",
-      "tags": [
-        "crash"
-      ],
-      "durationMs": 2777
-    },
-    {
-      "file": "crash_3.mp3",
-      "title": "Reversed Crash Cymbal - Low",
-      "author": "TheEndOfACycle",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/TheEndOfACycle/sounds/674292",
-      "tags": [
-        "crash"
-      ],
-      "durationMs": 2686
-    },
-    {
-      "file": "ride_1.mp3",
-      "title": "Zildjian Transitional Stamp Sizzle Ride Cymbal Bell Hit.wav",
-      "author": "pjcohen",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/pjcohen/sounds/46446",
-      "tags": [
-        "ride"
-      ],
-      "durationMs": 3633
-    },
-    {
-      "file": "ride_2.mp3",
-      "title": "Ride Cymbal 3 Edge",
-      "author": "Sajmund",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Sajmund/sounds/132405",
-      "tags": [
-        "ride"
-      ],
-      "durationMs": 9166
-    },
-    {
-      "file": "shaker_1.mp3",
-      "title": "Shuffle Shaker Loop 100 BPM.wav",
-      "author": "8bitmyketison",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/8bitmyketison/sounds/700634",
-      "tags": [
-        "shaker"
-      ],
-      "durationMs": 2400
-    },
-    {
-      "file": "shaker_2.mp3",
-      "title": "Pill Shaker Loop 130 BPM.wav",
-      "author": "8bitmyketison",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/8bitmyketison/sounds/699957",
-      "tags": [
-        "shaker"
-      ],
-      "durationMs": 7384
-    },
-    {
-      "file": "tamb_1.mp3",
-      "title": "tambourine 1.wav",
-      "author": "marvman",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/marvman/sounds/58875",
-      "tags": [
-        "tamb"
-      ],
-      "durationMs": 4336
-    },
-    {
-      "file": "tamb_2.mp3",
-      "title": "tambourine one shot.wav",
-      "author": "dfeltch",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/dfeltch/sounds/171658",
-      "tags": [
-        "tamb"
-      ],
-      "durationMs": 545
-    },
-    {
-      "file": "cowbell_1.mp3",
-      "title": "cowbell",
-      "author": "6rzyb",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/6rzyb/sounds/468208",
-      "tags": [
-        "cowbell"
-      ],
-      "durationMs": 3250
-    },
-    {
-      "file": "cowbell_2.mp3",
-      "title": "COWBELL WITH BLASTICK",
-      "author": "curesforbrokenhearts",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/curesforbrokenhearts/sounds/432202",
-      "tags": [
-        "cowbell"
-      ],
-      "durationMs": 1154
-    },
-    {
-      "file": "conga_2.mp3",
-      "title": "Conga (F#)- Tone",
-      "author": "Sassaby",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Sassaby/sounds/512063",
-      "tags": [
-        "conga"
-      ],
-      "durationMs": 843
-    },
-    {
-      "file": "conga_3.mp3",
-      "title": "Conga Fever",
-      "author": "MarcosPurziani",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/MarcosPurziani/sounds/537171",
-      "tags": [
-        "conga"
-      ],
-      "durationMs": 8727
-    },
-    {
-      "file": "bongo_1.mp3",
-      "title": "bongo loop with hats_130bpm.wav",
-      "author": "Br4dzdestroyer",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Br4dzdestroyer/sounds/369044",
-      "tags": [
-        "bongo"
-      ],
-      "durationMs": 1852
-    },
-    {
-      "file": "djembe_1.mp3",
-      "title": "Djembe Hit 6 Hi Rim.wav",
-      "author": "carlmartin",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/carlmartin/sounds/158969",
-      "tags": [
-        "djembe"
-      ],
-      "durationMs": 124
-    },
-    {
-      "file": "djembe_2.mp3",
-      "title": "Djembe Hit 6 Rim.wav",
-      "author": "carlmartin",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/carlmartin/sounds/158968",
-      "tags": [
-        "djembe"
-      ],
-      "durationMs": 213
+      "durationMs": 284
     },
     {
       "file": "block_2.mp3",
@@ -735,304 +87,16 @@
       "durationMs": 287
     },
     {
-      "file": "triangle_1.mp3",
-      "title": "Triangle_Open_02",
-      "author": "cabled_mess",
+      "file": "bongo_1.mp3",
+      "title": "bongo loop with hats_130bpm.wav",
+      "author": "Br4dzdestroyer",
       "license": "CC0 1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/cabled_mess/sounds/349503",
+      "source": "https://freesound.org/people/Br4dzdestroyer/sounds/369044",
       "tags": [
-        "triangle"
+        "bongo"
       ],
-      "durationMs": 4031
-    },
-    {
-      "file": "triangle_2.mp3",
-      "title": "Triangle_Open_01",
-      "author": "cabled_mess",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/cabled_mess/sounds/349501",
-      "tags": [
-        "triangle"
-      ],
-      "durationMs": 6921
-    },
-    {
-      "file": "brush_1.mp3",
-      "title": "brush_rubbing1.aif",
-      "author": "Heigh-hoo",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Heigh-hoo/sounds/20297",
-      "tags": [
-        "brush"
-      ],
-      "durationMs": 6445
-    },
-    {
-      "file": "brush_2.mp3",
-      "title": "brush_rubbing2.aif",
-      "author": "Heigh-hoo",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Heigh-hoo/sounds/20298",
-      "tags": [
-        "brush"
-      ],
-      "durationMs": 6685
-    },
-    {
-      "file": "sub_1.mp3",
-      "title": "sub bass 4 secondsssss.wav",
-      "author": "uzerx",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/uzerx/sounds/59540",
-      "tags": [
-        "sub"
-      ],
-      "durationMs": 2435
-    },
-    {
-      "file": "sub_2.mp3",
-      "title": "sub bass 5 secondsssss.wav",
-      "author": "uzerx",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/uzerx/sounds/59541",
-      "tags": [
-        "sub"
-      ],
-      "durationMs": 1910
-    },
-    {
-      "file": "piano_1.mp3",
-      "title": "A - Piano Chord",
-      "author": "blakengouda",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/blakengouda/sounds/528004",
-      "tags": [
-        "piano"
-      ],
-      "durationMs": 6000
-    },
-    {
-      "file": "piano_2.mp3",
-      "title": "piano chord",
-      "author": "PhonosUPF",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/PhonosUPF/sounds/488789",
-      "tags": [
-        "piano"
-      ],
-      "durationMs": 6667
-    },
-    {
-      "file": "rhodes_1.mp3",
-      "title": "Dissonant Electric Piano Sting 3",
-      "author": "nomiqbomi",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/nomiqbomi/sounds/578340",
-      "tags": [
-        "rhodes"
-      ],
-      "durationMs": 5421
-    },
-    {
-      "file": "rhodes_2.mp3",
-      "title": "Dissonant Electric Piano Sting 2",
-      "author": "nomiqbomi",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/nomiqbomi/sounds/578341",
-      "tags": [
-        "rhodes"
-      ],
-      "durationMs": 5421
-    },
-    {
-      "file": "organ_1.mp3",
-      "title": "clean_ci_fa_kruis.wav",
-      "author": "CmdRobot",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/CmdRobot/sounds/28143",
-      "tags": [
-        "organ"
-      ],
-      "durationMs": 2259
-    },
-    {
-      "file": "organ_2.mp3",
-      "title": "clean_sol_ci.wav",
-      "author": "CmdRobot",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/CmdRobot/sounds/28161",
-      "tags": [
-        "organ"
-      ],
-      "durationMs": 2172
-    },
-    {
-      "file": "lead_1.mp3",
-      "title": "synth lead loop.WAV",
-      "author": "ultrafix",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/ultrafix/sounds/60694",
-      "tags": [
-        "lead"
-      ],
-      "durationMs": 4000
-    },
-    {
-      "file": "lead_2.mp3",
-      "title": "Creepy Synth Lead, Tremolo",
-      "author": "f-r-a-g-i-l-e",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/f-r-a-g-i-l-e/sounds/496744",
-      "tags": [
-        "lead"
-      ],
-      "durationMs": 11294
-    },
-    {
-      "file": "pad_1.mp3",
-      "title": "[Synth pad] pad_satyr.wav",
-      "author": "waveplaySFX",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/waveplaySFX/sounds/264209",
-      "tags": [
-        "pad"
-      ],
-      "durationMs": 8067
-    },
-    {
-      "file": "pluck_1.mp3",
-      "title": "Intro Synth",
-      "author": "noirenex",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/noirenex/sounds/159398",
-      "tags": [
-        "pluck"
-      ],
-      "durationMs": 9240
-    },
-    {
-      "file": "pluck_2.mp3",
-      "title": "Insomniac Snyth Loop Rev.wav",
-      "author": "Stereo Surgeon",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/261209",
-      "tags": [
-        "pluck"
-      ],
-      "durationMs": 9258
-    },
-    {
-      "file": "arp_1.mp3",
-      "title": "guitar arpeggio C.wav",
-      "author": "Lucks86",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Lucks86/sounds/246268",
-      "tags": [
-        "arp"
-      ],
-      "durationMs": 5760
-    },
-    {
-      "file": "arp_2.mp3",
-      "title": "Arpeggio 01.wav",
-      "author": "Accorman",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Accorman/sounds/573646",
-      "tags": [
-        "arp"
-      ],
-      "durationMs": 10170
-    },
-    {
-      "file": "guitar_1.mp3",
-      "title": "Echo Chime Chime.mp3",
-      "author": "husky70",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/husky70/sounds/161316",
-      "tags": [
-        "guitar"
-      ],
-      "durationMs": 4304
-    },
-    {
-      "file": "guitar_2.mp3",
-      "title": "Dramatic Guitar",
-      "author": "soundsfromtheholeofmymind",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/soundsfromtheholeofmymind/sounds/341277",
-      "tags": [
-        "guitar"
-      ],
-      "durationMs": 9322
-    },
-    {
-      "file": "eguitar_1.mp3",
-      "title": "Electric guitar Metal Riff",
-      "author": "davidkyoku",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/davidkyoku/sounds/133999",
-      "tags": [
-        "eguitar"
-      ],
-      "durationMs": 6833
-    },
-    {
-      "file": "eguitar_2.mp3",
-      "title": "Funky Electric Guitar Sample 15 - 90 BPM",
-      "author": "bergice",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/bergice/sounds/268270",
-      "tags": [
-        "eguitar"
-      ],
-      "durationMs": 2666
-    },
-    {
-      "file": "violin_1.mp3",
-      "title": "v01_N.WAV",
-      "author": "Department64",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Department64/sounds/65384",
-      "tags": [
-        "violin"
-      ],
-      "durationMs": 1860
-    },
-    {
-      "file": "cello_1.mp3",
-      "title": "Cello_mono.wav",
-      "author": "speedyrce",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/speedyrce/sounds/329777",
-      "tags": [
-        "cello"
-      ],
-      "durationMs": 4226
+      "durationMs": 1852
     },
     {
       "file": "brass_1.mp3",
@@ -1059,6 +123,1014 @@
       "durationMs": 3005
     },
     {
+      "file": "breath_1.mp3",
+      "title": "Breath Human Sci.wav",
+      "author": "cidchili",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/cidchili/sounds/54961",
+      "tags": [
+        "breath"
+      ],
+      "durationMs": 4303
+    },
+    {
+      "file": "brush_1.mp3",
+      "title": "brush_rubbing1.aif",
+      "author": "Heigh-hoo",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Heigh-hoo/sounds/20297",
+      "tags": [
+        "brush"
+      ],
+      "durationMs": 6445
+    },
+    {
+      "file": "brush_2.mp3",
+      "title": "brush_rubbing2.aif",
+      "author": "Heigh-hoo",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Heigh-hoo/sounds/20298",
+      "tags": [
+        "brush"
+      ],
+      "durationMs": 6685
+    },
+    {
+      "file": "cello_1.mp3",
+      "title": "Cello_mono.wav",
+      "author": "speedyrce",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/speedyrce/sounds/329777",
+      "tags": [
+        "cello"
+      ],
+      "durationMs": 4226
+    },
+    {
+      "file": "choir_1.mp3",
+      "title": "Choir of Voices - Single Chord",
+      "author": "bone666138",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/bone666138/sounds/274121",
+      "tags": [
+        "choir"
+      ],
+      "durationMs": 6302
+    },
+    {
+      "file": "clap_1.mp3",
+      "title": "Hand claps",
+      "author": "parkersenk",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/parkersenk/sounds/452709",
+      "tags": [
+        "clap"
+      ],
+      "durationMs": 6434
+    },
+    {
+      "file": "clap_2.mp3",
+      "title": "Hand Claps",
+      "author": "Jofae",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Jofae/sounds/362954",
+      "tags": [
+        "clap"
+      ],
+      "durationMs": 2291
+    },
+    {
+      "file": "clap_3.mp3",
+      "title": "soft noise clap",
+      "author": "Saltbearer",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Saltbearer/sounds/477808",
+      "tags": [
+        "clap"
+      ],
+      "durationMs": 1709
+    },
+    {
+      "file": "clap_4.mp3",
+      "title": "soft noise clap with filters",
+      "author": "Saltbearer",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Saltbearer/sounds/477809",
+      "tags": [
+        "clap"
+      ],
+      "durationMs": 1690
+    },
+    {
+      "file": "clarinet_1.mp3",
+      "title": "Clarinet multiphonic",
+      "author": "camel7695",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/camel7695/sounds/427502",
+      "tags": [
+        "clarinet"
+      ],
+      "durationMs": 3500
+    },
+    {
+      "file": "click_1.mp3",
+      "title": "MPC Metronome click",
+      "author": "trader_one",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/trader_one/sounds/684106",
+      "tags": [
+        "click"
+      ],
+      "durationMs": 22
+    },
+    {
+      "file": "conga_1.mp3",
+      "title": "Kygo Tropical Conga Percussion Hit",
+      "author": "Cloud-10",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Cloud-10/sounds/678748",
+      "tags": [
+        "conga"
+      ],
+      "durationMs": 807
+    },
+    {
+      "file": "conga_2.mp3",
+      "title": "Conga (F#)- Tone",
+      "author": "Sassaby",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Sassaby/sounds/512063",
+      "tags": [
+        "conga"
+      ],
+      "durationMs": 843
+    },
+    {
+      "file": "conga_3.mp3",
+      "title": "Conga Fever",
+      "author": "MarcosPurziani",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/MarcosPurziani/sounds/537171",
+      "tags": [
+        "conga"
+      ],
+      "durationMs": 8727
+    },
+    {
+      "file": "cowbell_1.mp3",
+      "title": "cowbell",
+      "author": "6rzyb",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/6rzyb/sounds/468208",
+      "tags": [
+        "cowbell"
+      ],
+      "durationMs": 3250
+    },
+    {
+      "file": "cowbell_2.mp3",
+      "title": "COWBELL WITH BLASTICK",
+      "author": "curesforbrokenhearts",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/curesforbrokenhearts/sounds/432202",
+      "tags": [
+        "cowbell"
+      ],
+      "durationMs": 1154
+    },
+    {
+      "file": "crash_1.mp3",
+      "title": "cymbal-reversed-glassy-resonance.wav",
+      "author": "burnttoys",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/burnttoys/sounds/9523",
+      "tags": [
+        "crash"
+      ],
+      "durationMs": 3158
+    },
+    {
+      "file": "crash_2.mp3",
+      "title": "Reversed Crash Cymbal",
+      "author": "TheEndOfACycle",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/TheEndOfACycle/sounds/674291",
+      "tags": [
+        "crash"
+      ],
+      "durationMs": 2777
+    },
+    {
+      "file": "crash_3.mp3",
+      "title": "Reversed Crash Cymbal - Low",
+      "author": "TheEndOfACycle",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/TheEndOfACycle/sounds/674292",
+      "tags": [
+        "crash"
+      ],
+      "durationMs": 2686
+    },
+    {
+      "file": "djembe_1.mp3",
+      "title": "Djembe Hit 6 Hi Rim.wav",
+      "author": "carlmartin",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/carlmartin/sounds/158969",
+      "tags": [
+        "djembe"
+      ],
+      "durationMs": 124
+    },
+    {
+      "file": "djembe_2.mp3",
+      "title": "Djembe Hit 6 Rim.wav",
+      "author": "carlmartin",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/carlmartin/sounds/158968",
+      "tags": [
+        "djembe"
+      ],
+      "durationMs": 213
+    },
+    {
+      "file": "down_1.mp3",
+      "title": "Lunar Downlifter FX 4.wav",
+      "author": "maqsim",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/maqsim/sounds/172157",
+      "tags": [
+        "down"
+      ],
+      "durationMs": 7394
+    },
+    {
+      "file": "eguitar_1.mp3",
+      "title": "Electric guitar Metal Riff",
+      "author": "davidkyoku",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/davidkyoku/sounds/133999",
+      "tags": [
+        "eguitar"
+      ],
+      "durationMs": 6833
+    },
+    {
+      "file": "eguitar_2.mp3",
+      "title": "Funky Electric Guitar Sample 15 - 90 BPM",
+      "author": "bergice",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/bergice/sounds/268270",
+      "tags": [
+        "eguitar"
+      ],
+      "durationMs": 2666
+    },
+    {
+      "file": "flute_1.mp3",
+      "title": "Flute Play C - 14.wav",
+      "author": "cms4f",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/cms4f/sounds/159136",
+      "tags": [
+        "flute"
+      ],
+      "durationMs": 5200
+    },
+    {
+      "file": "flute_2.mp3",
+      "title": "Flute alto.wav",
+      "author": "SeryLis",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/SeryLis/sounds/177244",
+      "tags": [
+        "flute"
+      ],
+      "durationMs": 7923
+    },
+    {
+      "file": "fx_1.mp3",
+      "title": "Percusive Noise Riser.wav",
+      "author": "Stereo Surgeon",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/261415",
+      "tags": [
+        "fx"
+      ],
+      "durationMs": 5799
+    },
+    {
+      "file": "fx_2.mp3",
+      "title": "Sweep Downwards.wav",
+      "author": "stair",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/stair/sounds/387552",
+      "tags": [
+        "fx"
+      ],
+      "durationMs": 8000
+    },
+    {
+      "file": "fx_3.mp3",
+      "title": "Deep Whoosh #1",
+      "author": "Kinoton",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Kinoton/sounds/351256",
+      "tags": [
+        "fx"
+      ],
+      "durationMs": 3155
+    },
+    {
+      "file": "guitar_1.mp3",
+      "title": "Echo Chime Chime.mp3",
+      "author": "husky70",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/husky70/sounds/161316",
+      "tags": [
+        "guitar"
+      ],
+      "durationMs": 4304
+    },
+    {
+      "file": "guitar_2.mp3",
+      "title": "Dramatic Guitar",
+      "author": "soundsfromtheholeofmymind",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/soundsfromtheholeofmymind/sounds/341277",
+      "tags": [
+        "guitar"
+      ],
+      "durationMs": 9322
+    },
+    {
+      "file": "hat_1.mp3",
+      "title": "Zildjian A Custom Hi-Hat Cymbals Closed Hit.WAV",
+      "author": "pjcohen",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/pjcohen/sounds/45664",
+      "tags": [
+        "hat"
+      ],
+      "durationMs": 271
+    },
+    {
+      "file": "hat_2.mp3",
+      "title": "Echoed Hi-Hats",
+      "author": "ani_music",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/ani_music/sounds/165321",
+      "tags": [
+        "hat"
+      ],
+      "durationMs": 870
+    },
+    {
+      "file": "hat_3.mp3",
+      "title": "Chimbal Fechado - Closed Hi-Hat",
+      "author": "gilblack1234",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/gilblack1234/sounds/527797",
+      "tags": [
+        "hat"
+      ],
+      "durationMs": 165
+    },
+    {
+      "file": "hat_4.mp3",
+      "title": "Yamaha PSR-36 Closed Hi-Hat",
+      "author": "Joao_Janz",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Joao_Janz/sounds/477891",
+      "tags": [
+        "hat"
+      ],
+      "durationMs": 125
+    },
+    {
+      "file": "horn_1.mp3",
+      "title": "Horn Stabs Entrance",
+      "author": "bevibeldesign",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/bevibeldesign/sounds/350433",
+      "tags": [
+        "horn"
+      ],
+      "durationMs": 1719
+    },
+    {
+      "file": "keys_1.mp3",
+      "title": "Hard piano note stereo saturated spooky",
+      "author": "tusic99",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/tusic99/sounds/648902",
+      "tags": [
+        "keys"
+      ],
+      "durationMs": 3692
+    },
+    {
+      "file": "keys_2.mp3",
+      "title": "cat piano note c.wav",
+      "author": "meku_a",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/meku_a/sounds/612806",
+      "tags": [
+        "keys"
+      ],
+      "durationMs": 7915
+    },
+    {
+      "file": "kick_1.mp3",
+      "title": "Simple Kick Drum",
+      "author": "IanStarGem",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/IanStarGem/sounds/274775",
+      "tags": [
+        "kick"
+      ],
+      "durationMs": 441
+    },
+    {
+      "file": "kick_2.mp3",
+      "title": "Kick Drum",
+      "author": "Poligonstudio",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Poligonstudio/sounds/410149",
+      "tags": [
+        "kick"
+      ],
+      "durationMs": 960
+    },
+    {
+      "file": "kick_3.mp3",
+      "title": "SH01a Bass Drum 004",
+      "author": "ANARKYA",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/ANARKYA/sounds/459895",
+      "tags": [
+        "kick"
+      ],
+      "durationMs": 904
+    },
+    {
+      "file": "kick_4.mp3",
+      "title": "ONE SHOT 2.wav",
+      "author": "Newangelsociety",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Newangelsociety/sounds/65477",
+      "tags": [
+        "kick"
+      ],
+      "durationMs": 1714
+    },
+    {
+      "file": "lead_1.mp3",
+      "title": "synth lead loop.WAV",
+      "author": "ultrafix",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/ultrafix/sounds/60694",
+      "tags": [
+        "lead"
+      ],
+      "durationMs": 4000
+    },
+    {
+      "file": "lead_2.mp3",
+      "title": "Creepy Synth Lead, Tremolo",
+      "author": "f-r-a-g-i-l-e",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/f-r-a-g-i-l-e/sounds/496744",
+      "tags": [
+        "lead"
+      ],
+      "durationMs": 11294
+    },
+    {
+      "file": "loop_1.mp3",
+      "title": "Tribe Drum Loop",
+      "author": "PearceWilsonKing",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/PearceWilsonKing/sounds/342465",
+      "tags": [
+        "loop"
+      ],
+      "durationMs": 8275
+    },
+    {
+      "file": "noise_1.mp3",
+      "title": "Vinyl Noise, Crackles for Looping",
+      "author": "f-r-a-g-i-l-e",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/f-r-a-g-i-l-e/sounds/474813",
+      "tags": [
+        "noise"
+      ],
+      "durationMs": 7453
+    },
+    {
+      "file": "organ_1.mp3",
+      "title": "clean_ci_fa_kruis.wav",
+      "author": "CmdRobot",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/CmdRobot/sounds/28143",
+      "tags": [
+        "organ"
+      ],
+      "durationMs": 2259
+    },
+    {
+      "file": "organ_2.mp3",
+      "title": "clean_sol_ci.wav",
+      "author": "CmdRobot",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/CmdRobot/sounds/28161",
+      "tags": [
+        "organ"
+      ],
+      "durationMs": 2172
+    },
+    {
+      "file": "pad_1.mp3",
+      "title": "[Synth pad] pad_satyr.wav",
+      "author": "waveplaySFX",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/waveplaySFX/sounds/264209",
+      "tags": [
+        "pad"
+      ],
+      "durationMs": 8067
+    },
+    {
+      "file": "perc_1.mp3",
+      "title": "Matchbox wood shaker percussion one-shot foley sound.wav",
+      "author": "Duisterwho",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Duisterwho/sounds/644706",
+      "tags": [
+        "perc"
+      ],
+      "durationMs": 500
+    },
+    {
+      "file": "perc_2.mp3",
+      "title": "Mentos looping rattle percussion - shaker percussion foley - one shot.wav",
+      "author": "Duisterwho",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Duisterwho/sounds/644668",
+      "tags": [
+        "perc"
+      ],
+      "durationMs": 875
+    },
+    {
+      "file": "piano_1.mp3",
+      "title": "A - Piano Chord",
+      "author": "blakengouda",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/blakengouda/sounds/528004",
+      "tags": [
+        "piano"
+      ],
+      "durationMs": 6000
+    },
+    {
+      "file": "piano_2.mp3",
+      "title": "piano chord",
+      "author": "PhonosUPF",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/PhonosUPF/sounds/488789",
+      "tags": [
+        "piano"
+      ],
+      "durationMs": 6667
+    },
+    {
+      "file": "pluck_1.mp3",
+      "title": "Intro Synth",
+      "author": "noirenex",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/noirenex/sounds/159398",
+      "tags": [
+        "pluck"
+      ],
+      "durationMs": 9240
+    },
+    {
+      "file": "pluck_2.mp3",
+      "title": "Insomniac Snyth Loop Rev.wav",
+      "author": "Stereo Surgeon",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/261209",
+      "tags": [
+        "pluck"
+      ],
+      "durationMs": 9258
+    },
+    {
+      "file": "rhodes_1.mp3",
+      "title": "Dissonant Electric Piano Sting 3",
+      "author": "nomiqbomi",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/nomiqbomi/sounds/578340",
+      "tags": [
+        "rhodes"
+      ],
+      "durationMs": 5421
+    },
+    {
+      "file": "rhodes_2.mp3",
+      "title": "Dissonant Electric Piano Sting 2",
+      "author": "nomiqbomi",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/nomiqbomi/sounds/578341",
+      "tags": [
+        "rhodes"
+      ],
+      "durationMs": 5421
+    },
+    {
+      "file": "ride_1.mp3",
+      "title": "Zildjian Transitional Stamp Sizzle Ride Cymbal Bell Hit.wav",
+      "author": "pjcohen",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/pjcohen/sounds/46446",
+      "tags": [
+        "ride"
+      ],
+      "durationMs": 3633
+    },
+    {
+      "file": "ride_2.mp3",
+      "title": "Ride Cymbal 3 Edge",
+      "author": "Sajmund",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Sajmund/sounds/132405",
+      "tags": [
+        "ride"
+      ],
+      "durationMs": 9166
+    },
+    {
+      "file": "rim_1.mp3",
+      "title": "Rimshot (sweet)",
+      "author": "Sajmund",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Sajmund/sounds/132418",
+      "tags": [
+        "rim"
+      ],
+      "durationMs": 1072
+    },
+    {
+      "file": "rim_2.mp3",
+      "title": "Sting, rimshot, drum roll (smooth)",
+      "author": "tlwmdbt",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/tlwmdbt/sounds/440829",
+      "tags": [
+        "rim"
+      ],
+      "durationMs": 5333
+    },
+    {
+      "file": "riser_1.mp3",
+      "title": "Riser Noise FX",
+      "author": "NecoKen1",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/NecoKen1/sounds/627729",
+      "tags": [
+        "riser"
+      ],
+      "durationMs": 9000
+    },
+    {
+      "file": "riser_2.mp3",
+      "title": "Scary Hits & Risers 001",
+      "author": "Xinematix",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Xinematix/sounds/396161",
+      "tags": [
+        "riser"
+      ],
+      "durationMs": 9600
+    },
+    {
+      "file": "sax_1.mp3",
+      "title": "Tenor Sax Phrase with Ghosted Note",
+      "author": "Adam_in_Tokyo",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Adam_in_Tokyo/sounds/479052",
+      "tags": [
+        "sax"
+      ],
+      "durationMs": 5375
+    },
+    {
+      "file": "scratch_1.mp3",
+      "title": "Vocal scratch voice vinyl scratching one shot",
+      "author": "Duisterwho",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Duisterwho/sounds/641343",
+      "tags": [
+        "scratch"
+      ],
+      "durationMs": 2750
+    },
+    {
+      "file": "shaker_1.mp3",
+      "title": "Shuffle Shaker Loop 100 BPM.wav",
+      "author": "8bitmyketison",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/8bitmyketison/sounds/700634",
+      "tags": [
+        "shaker"
+      ],
+      "durationMs": 2400
+    },
+    {
+      "file": "shaker_2.mp3",
+      "title": "Pill Shaker Loop 130 BPM.wav",
+      "author": "8bitmyketison",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/8bitmyketison/sounds/699957",
+      "tags": [
+        "shaker"
+      ],
+      "durationMs": 7384
+    },
+    {
+      "file": "shout_1.mp3",
+      "title": "US Military Soldier Shouting 'Whoo!'",
+      "author": "qubodup",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/qubodup/sounds/161340",
+      "tags": [
+        "shout"
+      ],
+      "durationMs": 750
+    },
+    {
+      "file": "snap_1.mp3",
+      "title": "Percussion Snap",
+      "author": "purpleducttapehat",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/purpleducttapehat/sounds/272114",
+      "tags": [
+        "snap"
+      ],
+      "durationMs": 1555
+    },
+    {
+      "file": "snare_1.mp3",
+      "title": "snare drum 4.wav",
+      "author": "KEVOY",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/KEVOY/sounds/82583",
+      "tags": [
+        "snare"
+      ],
+      "durationMs": 1791
+    },
+    {
+      "file": "snare_2.mp3",
+      "title": "Dubstep Snare drum",
+      "author": "Tr4ck3r",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Tr4ck3r/sounds/190592",
+      "tags": [
+        "snare"
+      ],
+      "durationMs": 1056
+    },
+    {
+      "file": "snare_3.mp3",
+      "title": "snare hit a.wav",
+      "author": "lofabred",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/lofabred/sounds/12817",
+      "tags": [
+        "snare"
+      ],
+      "durationMs": 787
+    },
+    {
+      "file": "snare_4.mp3",
+      "title": "Snare Hit",
+      "author": "deadpoetsocietyband",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/deadpoetsocietyband/sounds/128976",
+      "tags": [
+        "snare"
+      ],
+      "durationMs": 2025
+    },
+    {
+      "file": "string_1.mp3",
+      "title": "string pizzicato",
+      "author": "PhonosUPF",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/PhonosUPF/sounds/498490",
+      "tags": [
+        "string"
+      ],
+      "durationMs": 923
+    },
+    {
+      "file": "sub_1.mp3",
+      "title": "sub bass 4 secondsssss.wav",
+      "author": "uzerx",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/uzerx/sounds/59540",
+      "tags": [
+        "sub"
+      ],
+      "durationMs": 2435
+    },
+    {
+      "file": "sub_2.mp3",
+      "title": "sub bass 5 secondsssss.wav",
+      "author": "uzerx",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/uzerx/sounds/59541",
+      "tags": [
+        "sub"
+      ],
+      "durationMs": 1910
+    },
+    {
+      "file": "synth_1.mp3",
+      "title": "Synth Stab 1",
+      "author": "Stereo Surgeon",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/265675",
+      "tags": [
+        "synth"
+      ],
+      "durationMs": 1875
+    },
+    {
+      "file": "tamb_1.mp3",
+      "title": "tambourine 1.wav",
+      "author": "marvman",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/marvman/sounds/58875",
+      "tags": [
+        "tamb"
+      ],
+      "durationMs": 4336
+    },
+    {
+      "file": "tamb_2.mp3",
+      "title": "tambourine one shot.wav",
+      "author": "dfeltch",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/dfeltch/sounds/171658",
+      "tags": [
+        "tamb"
+      ],
+      "durationMs": 545
+    },
+    {
+      "file": "tom_1.mp3",
+      "title": "Yamaha Oak Custom Tom Mid.wav",
+      "author": "pjcohen",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/pjcohen/sounds/46554",
+      "tags": [
+        "tom"
+      ],
+      "durationMs": 1816
+    },
+    {
+      "file": "tom_2.mp3",
+      "title": "TOM HITS 01.wav",
+      "author": "HUMANOISEMAKER",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/HUMANOISEMAKER/sounds/530692",
+      "tags": [
+        "tom"
+      ],
+      "durationMs": 2750
+    },
+    {
+      "file": "tom_3.mp3",
+      "title": "TOM HITS 03.wav",
+      "author": "HUMANOISEMAKER",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/HUMANOISEMAKER/sounds/530694",
+      "tags": [
+        "tom"
+      ],
+      "durationMs": 5000
+    },
+    {
+      "file": "triangle_1.mp3",
+      "title": "Triangle_Open_02",
+      "author": "cabled_mess",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/cabled_mess/sounds/349503",
+      "tags": [
+        "triangle"
+      ],
+      "durationMs": 4031
+    },
+    {
+      "file": "triangle_2.mp3",
+      "title": "Triangle_Open_01",
+      "author": "cabled_mess",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/cabled_mess/sounds/349501",
+      "tags": [
+        "triangle"
+      ],
+      "durationMs": 6921
+    },
+    {
       "file": "trumpet_1.mp3",
       "title": "trumpet-E4",
       "author": "germanio",
@@ -1083,40 +1155,28 @@
       "durationMs": 6825
     },
     {
-      "file": "sax_1.mp3",
-      "title": "Tenor Sax Phrase with Ghosted Note",
-      "author": "Adam_in_Tokyo",
+      "file": "violin_1.mp3",
+      "title": "v01_N.WAV",
+      "author": "Department64",
       "license": "CC0 1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Adam_in_Tokyo/sounds/479052",
+      "source": "https://freesound.org/people/Department64/sounds/65384",
       "tags": [
-        "sax"
+        "violin"
       ],
-      "durationMs": 5375
+      "durationMs": 1860
     },
     {
-      "file": "flute_2.mp3",
-      "title": "Flute alto.wav",
-      "author": "SeryLis",
+      "file": "vox_1.mp3",
+      "title": "ahh.wav",
+      "author": "filmbetrachterin",
       "license": "CC0 1.0",
       "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/SeryLis/sounds/177244",
+      "source": "https://freesound.org/people/filmbetrachterin/sounds/414227",
       "tags": [
-        "flute"
+        "vox"
       ],
-      "durationMs": 7923
-    },
-    {
-      "file": "clarinet_1.mp3",
-      "title": "Clarinet multiphonic",
-      "author": "camel7695",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/camel7695/sounds/427502",
-      "tags": [
-        "clarinet"
-      ],
-      "durationMs": 3500
+      "durationMs": 3520
     },
     {
       "file": "vox_2.mp3",
@@ -1131,30 +1191,6 @@
       "durationMs": 3520
     },
     {
-      "file": "choir_1.mp3",
-      "title": "Choir of Voices - Single Chord",
-      "author": "bone666138",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/bone666138/sounds/274121",
-      "tags": [
-        "choir"
-      ],
-      "durationMs": 6302
-    },
-    {
-      "file": "shout_1.mp3",
-      "title": "US Military Soldier Shouting 'Whoo!'",
-      "author": "qubodup",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/qubodup/sounds/161340",
-      "tags": [
-        "shout"
-      ],
-      "durationMs": 750
-    },
-    {
       "file": "whisper_1.mp3",
       "title": "Creepy Whispering",
       "author": "RaspberryTickle",
@@ -1165,42 +1201,6 @@
         "whisper"
       ],
       "durationMs": 4086
-    },
-    {
-      "file": "breath_1.mp3",
-      "title": "Breath Human Sci.wav",
-      "author": "cidchili",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/cidchili/sounds/54961",
-      "tags": [
-        "breath"
-      ],
-      "durationMs": 4303
-    },
-    {
-      "file": "riser_2.mp3",
-      "title": "Scary Hits & Risers 001",
-      "author": "Xinematix",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/Xinematix/sounds/396161",
-      "tags": [
-        "riser"
-      ],
-      "durationMs": 9600
-    },
-    {
-      "file": "down_1.mp3",
-      "title": "Lunar Downlifter FX 4.wav",
-      "author": "maqsim",
-      "license": "CC0 1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "source": "https://freesound.org/people/maqsim/sounds/172157",
-      "tags": [
-        "down"
-      ],
-      "durationMs": 7394
     },
     {
       "file": "looperman-l-0052497-0001063-trancefer-hard-bass.wav",
@@ -1321,6 +1321,32 @@
       ]
     },
     {
+      "file": "looperman-l-1564425-0302872-harder-hitting-synthpop-bassline.wav",
+      "title": "Harder Hitting Synthpop Bassline",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/302872",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "bass"
+      ]
+    },
+    {
+      "file": "looperman-l-1582059-0132128-the-drip-arp-140.wav",
+      "title": "The Drip Arp 140",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/132128",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "loop"
+      ]
+    },
+    {
       "file": "looperman-l-1964781-0117942-gee808-hard-808-kicks-with-hard-slides.wav",
       "title": "Gee808 Hard 808 Kicks With Hard Slides",
       "author": "",
@@ -1331,6 +1357,33 @@
       "tags": [
         "looperman",
         "loop"
+      ]
+    },
+    {
+      "file": "looperman-l-1994057-0431671-bass-guitar-fight-night.wav",
+      "title": "Bass Guitar Fight Night",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/431671",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "bass",
+        "guitar"
+      ]
+    },
+    {
+      "file": "looperman-l-2430625-0226062-synth-bass.wav",
+      "title": "Synth Bass",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/226062",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "bass"
       ]
     },
     {
@@ -1361,6 +1414,19 @@
       ]
     },
     {
+      "file": "looperman-l-2957167-0162888-beautiful-bass-beautiful-set.wav",
+      "title": "Beautiful Bass Beautiful Set",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/162888",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "bass"
+      ]
+    },
+    {
       "file": "looperman-l-3038622-0294661-dnb-break-beat.wav",
       "title": "Dnb Break Beat",
       "author": "",
@@ -1387,12 +1453,51 @@
       ]
     },
     {
+      "file": "looperman-l-4348641-0256773-club-banger-type-loop-vibe.wav",
+      "title": "Club Banger Type Loop Vibe",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/256773",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "loop"
+      ]
+    },
+    {
+      "file": "looperman-l-4474940-0278899-private-jet-guitar-loop-hvvdi.wav",
+      "title": "Private Jet Guitar Loop Hvvdi",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/278899",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "guitar"
+      ]
+    },
+    {
       "file": "looperman-l-4654697-0437054-get-down-drums-and-808.wav",
       "title": "Get Down Drums And 808",
       "author": "",
       "license": "Looperman (только личное)",
       "licenseUrl": "https://www.looperman.com/terms",
       "source": "https://www.looperman.com/loops/detail/437054",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "drums"
+      ]
+    },
+    {
+      "file": "looperman-l-5060770-0311218-80s-pop-drums.wav",
+      "title": "80s Pop Drums",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/311218",
       "folder": "Looperman",
       "tags": [
         "looperman",
@@ -1410,6 +1515,19 @@
       "tags": [
         "looperman",
         "drums"
+      ]
+    },
+    {
+      "file": "looperman-l-5656270-0436588-broken-guitar.wav",
+      "title": "Broken Guitar",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/436588",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "guitar"
       ]
     },
     {
@@ -1466,12 +1584,51 @@
       ]
     },
     {
+      "file": "looperman-l-6573183-0432709-cinematic-dark-choir-escape.wav",
+      "title": "Cinematic Dark Choir Escape",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/432709",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "loop"
+      ]
+    },
+    {
+      "file": "looperman-l-6641647-0431065-emk-function.wav",
+      "title": "Emk Function",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/431065",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "loop"
+      ]
+    },
+    {
       "file": "looperman-l-7109333-0397449-bitkill-bass.wav",
       "title": "Bitkill Bass",
       "author": "",
       "license": "Looperman (только личное)",
       "licenseUrl": "https://www.looperman.com/terms",
       "source": "https://www.looperman.com/loops/detail/397449",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "bass"
+      ]
+    },
+    {
+      "file": "looperman-l-7155116-0436689-timzenhq-dang-moug-bass-loop.wav",
+      "title": "Timzenhq Dang Moug Bass Loop",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/436689",
       "folder": "Looperman",
       "tags": [
         "looperman",
@@ -1492,6 +1649,58 @@
       ]
     },
     {
+      "file": "looperman-l-8028610-0428080-sad-yeat-type-vocal-loop-pray.wav",
+      "title": "Sad Yeat Type Vocal Loop Pray",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/428080",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "vox"
+      ]
+    },
+    {
+      "file": "looperman-l-8260433-0436298-a-villainous-siberian-taiga-style-dance-riff.wav",
+      "title": "A Villainous Siberian Taiga Style Dance Riff",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/436298",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "loop"
+      ]
+    },
+    {
+      "file": "looperman-l-8260433-0436759-15-second-set-loop-part-4-precision.wav",
+      "title": "15 Second Set Loop Part 4 Precision",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/436759",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "loop"
+      ]
+    },
+    {
+      "file": "looperman-l-8353314-0436783-hiphop-drum-loop-99-bpm-bounce-louisbreaks.wav",
+      "title": "Hiphop Drum Loop 99 Bpm Bounce Louisbreaks",
+      "author": "",
+      "license": "Looperman (только личное)",
+      "licenseUrl": "https://www.looperman.com/terms",
+      "source": "https://www.looperman.com/loops/detail/436783",
+      "folder": "Looperman",
+      "tags": [
+        "looperman",
+        "drums"
+      ]
+    },
+    {
       "file": "looperman-l-8353314-0436908-hiphop-drum-loop-90-bpm-snap-louisbreaks.wav",
       "title": "Hiphop Drum Loop 90 Bpm Snap Louisbreaks",
       "author": "",
@@ -1502,6 +1711,66 @@
       "tags": [
         "looperman",
         "drums"
+      ]
+    },
+    {
+      "file": "05 - Звуки выстрела очередью из пулемета.mp3",
+      "title": "05 - Звуки выстрела очередью из пулемета",
+      "author": "",
+      "license": "неизвестно",
+      "licenseUrl": "",
+      "source": "",
+      "folder": "Без лицензии",
+      "tags": [
+        "sfx"
+      ]
+    },
+    {
+      "file": "11 - Звук выстрела из снайперки винтовки.mp3",
+      "title": "11 - Звук выстрела из снайперки винтовки",
+      "author": "",
+      "license": "неизвестно",
+      "licenseUrl": "",
+      "source": "",
+      "folder": "Без лицензии",
+      "tags": [
+        "sfx"
+      ]
+    },
+    {
+      "file": "20 - Перезарядка и выстрел Калашаников.mp3",
+      "title": "20 - Перезарядка и выстрел Калашаников",
+      "author": "",
+      "license": "неизвестно",
+      "licenseUrl": "",
+      "source": "",
+      "folder": "Без лицензии",
+      "tags": [
+        "sfx"
+      ]
+    },
+    {
+      "file": "26 - Выстрел танка (6 раз).mp3",
+      "title": "26 - Выстрел танка (6 раз)",
+      "author": "",
+      "license": "неизвестно",
+      "licenseUrl": "",
+      "source": "",
+      "folder": "Без лицензии",
+      "tags": [
+        "sfx"
+      ]
+    },
+    {
+      "file": "27 - Лазер, лазерный выстрел.mp3",
+      "title": "27 - Лазер, лазерный выстрел",
+      "author": "",
+      "license": "неизвестно",
+      "licenseUrl": "",
+      "source": "",
+      "folder": "Без лицензии",
+      "tags": [
+        "sfx"
       ]
     }
   ]
