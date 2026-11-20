@@ -731,7 +731,8 @@
                         <p class="note">
                             Разделение DSP-методом: центр (Mid) уходит в вокал, бока (Side) — в инструментал,
                             плюс полосы низа и верха. Это не нейросеть: инструменты разделяются приблизительно,
-                            зато мгновенно и без загрузки моделей.
+                            зато мгновенно и без загрузки моделей. Ползунки действуют сразу во время игры,
+                            без пересборки звука; «▶» слушает только эту дорожку, «⤓» сохраняет её.
                         </p>
                     </section>
 
@@ -1362,6 +1363,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         playing: false,
         speed: 1,
         bypassStems: false,
+        stemSolo: null,
         extraGainDb: 0,
         raf: 0,
     };
@@ -1510,10 +1512,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const stems = player.nodes && player.nodes.stems;
         if (!stems) return;
         const when = player.ctx ? player.ctx.currentTime : 0;
+        const solo = player.stemSolo;
         STEMS.forEach((stem) => {
             const node = stems[stem.id];
             if (!node) return;
-            node.gain.setTargetAtTime(app.stemGains[stem.id] ?? 1, when, 0.015);
+            const value = solo ? (stem.id === solo ? (app.stemGains[stem.id] ?? 1) : 0) : (app.stemGains[stem.id] ?? 1);
+            node.gain.setTargetAtTime(value, when, 0.015);
         });
     }
 
@@ -2445,6 +2449,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         player.speed = 1;
         player.extraGainDb = 0;
         player.bypassStems = false;
+        player.stemSolo = null;
         paint();
     }
 
@@ -2473,11 +2478,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         };
         const frames = Math.round((end - start) * app.buffer.sampleRate);
         const withSamples = opts.samples !== false && hasSamplesInRange(start, end);
-        const processing = !isPlainRange(opts) || withSamples;
+        // соло-прослух дорожки требует рендера: в буфере только полоса, граф при этом обходим
+        const processing = !nodeStems || !isPlainRange(opts) || withSamples;
 
         stopPlayback();
         // громкость фрагмента живёт в нодах — задаём её после сброса состояния
         player.extraGainDb = (opts.gainDb ?? 0) - app.gainDb;
+        player.stemSolo = opts.soloStem || null;
+        applyStemParams();
 
         let ctx;
         try {
@@ -3926,7 +3934,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             const clip = findClip(playContext.clipId);
             if (clip) return clipOptions(clip);
         }
-        if (playContext && playContext.kind === 'stem') return stemOptions(playContext.stemId);
+        if (playContext && playContext.kind === 'stem') return { ...soundOptions(), samples: false, soloStem: playContext.stemId };
         return soundOptions();
     }
 
@@ -5590,6 +5598,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const id = row.dataset.stem;
         app.stemGains[id] = Number(event.target.value) / 100;
         row.querySelector('.stem-val').textContent = `${event.target.value}%`;
+        // крутим уровни — значит слушаем микс, соло снимаем
+        player.stemSolo = null;
         applyStemParams();
     });
 
@@ -5599,7 +5609,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             if (!app.buffer) return;
             const range = exportRange();
             playContext = { kind: 'stem', stemId: play.dataset.stemPlay };
-            playRange(range.start, range.end, stemOptions(play.dataset.stemPlay));
+            playRange(range.start, range.end, { ...soundOptions(), samples: false, soloStem: play.dataset.stemPlay });
             return;
         }
         const exp = event.target.closest('[data-stem-export]');
