@@ -1287,6 +1287,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         startedAt: 0,
         playing: false,
         speed: 1,
+        bypassStems: false,
+        extraGainDb: 0,
         raf: 0,
     };
 
@@ -1326,6 +1328,70 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return player.ctx;
     }
 
+    // Дорожки — тоже ноды: ползунки меняют только уровни, звук не пересобирается.
+    // Сумма четырёх веток при уровнях 100 % равна исходнику: инструментал = всё минус три полосы.
+    function buildStemGraph(ctx, dest) {
+        const input = ctx.createGain();
+        const out = ctx.createGain();
+        out.connect(dest);
+
+        const filter = (type, freq) => {
+            const node = ctx.createBiquadFilter();
+            node.type = type;
+            node.frequency.value = freq;
+            // в Web Audio Q у lowpass/highpass задаётся в дБ: −3.01 дБ = 0.7071, как в офлайн-фильтре
+            node.Q.value = -3.0103;
+            return node;
+        };
+        const link = (first, ...rest) => {
+            let last = first;
+            rest.forEach((node) => { last.connect(node); last = node; });
+            return last;
+        };
+
+        // бас: два lowpass 140 Гц
+        const bassIn = ctx.createGain();
+        input.connect(bassIn);
+        const bassOut = link(bassIn, filter('lowpass', 140), filter('lowpass', 140));
+        const bass = ctx.createGain();
+        bassOut.connect(bass);
+        bass.connect(out);
+
+        // верх: два highpass 8 кГц
+        const highsIn = ctx.createGain();
+        input.connect(highsIn);
+        const highsOut = link(highsIn, filter('highpass', 8000), filter('highpass', 8000));
+        const highs = ctx.createGain();
+        highsOut.connect(highs);
+        highs.connect(out);
+
+        // вокал: моно-сумма (L+R)/2, затем 150 Гц – 8 кГц
+        const mono = ctx.createGain();
+        mono.channelCount = 1;
+        mono.channelCountMode = 'explicit';
+        mono.channelInterpretation = 'speakers';
+        input.connect(mono);
+        const vocalOut = link(mono, filter('highpass', 150), filter('highpass', 150), filter('lowpass', 8000), filter('lowpass', 8000));
+        const vocal = ctx.createGain();
+        vocalOut.connect(vocal);
+        vocal.connect(out);
+
+        // инструментал: сухой сигнал минус три отфильтрованные полосы
+        const instSum = ctx.createGain();
+        input.connect(instSum);
+        [bassOut, highsOut, vocalOut].forEach((node) => {
+            const invert = ctx.createGain();
+            invert.gain.value = -1;
+            node.connect(invert);
+            invert.connect(instSum);
+        });
+        const instrumental = ctx.createGain();
+        instSum.connect(instrumental);
+        instrumental.connect(out);
+
+        return { input, out, vocal, instrumental, bass, highs };
+    }
+
     async function ensureRunning() {
         const ctx = getContext();
         if (ctx.state === 'suspended') {
@@ -1344,7 +1410,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             low.connect(high);
             high.connect(master);
             master.connect(ctx.destination);
-            player.nodes = { pre, low, high, master };
+            player.nodes = { pre, low, high, master, stems: buildStemGraph(ctx, pre) };
             player.gain = master;
         }
         applyLiveParams();
@@ -1356,10 +1422,29 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const nodes = player.nodes;
         if (!nodes) return;
         const when = player.ctx ? player.ctx.currentTime : 0;
-        nodes.pre.gain.setTargetAtTime(dbToGain(app.gainDb), when, 0.01);
+        const extra = player.extraGainDb || 0;
+        // громкость фрагмента живёт отдельно от громкости трека
+        nodes.pre.gain.setTargetAtTime(dbToGain(app.gainDb + extra), when, 0.01);
         nodes.low.gain.setTargetAtTime(app.lowDb, when, 0.01);
         nodes.high.gain.setTargetAtTime(app.highDb, when, 0.01);
         nodes.master.gain.setTargetAtTime(app.volume, when, 0.01);
+        applyStemParams();
+    }
+
+    // Уровни дорожек: меняются мгновенно, без пересборки звука
+    function applyStemParams() {
+        const stems = player.nodes && player.nodes.stems;
+        if (!stems) return;
+        const when = player.ctx ? player.ctx.currentTime : 0;
+        STEMS.forEach((stem) => {
+            const node = stems[stem.id];
+            if (!node) return;
+            node.gain.setTargetAtTime(app.stemGains[stem.id] ?? 1, when, 0.015);
+        });
+    }
+
+    function sameStemGains(a, b) {
+        return STEMS.every((stem) => Math.abs((a[stem.id] ?? 1) - (b[stem.id] ?? 1)) < 1e-3);
     }
 
     // Скорость — это playbackRate источника, тоже без рендера
@@ -2218,7 +2303,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         disposeSource();
         const source = ctx.createBufferSource();
         source.buffer = player.buffer;
-        source.connect(player.nodes ? player.nodes.pre : player.gain);
+        const nodes = player.nodes;
+        // при явном соло дорожка уже зашита в буфер — граф обходим
+        const target = nodes ? (player.bypassStems ? nodes.pre : nodes.stems.input) : player.gain;
+        source.connect(target);
         source.playbackRate.value = app.speed || 1;
         player.speed = app.speed || 1;
         const token = ++player.token;
@@ -2245,8 +2333,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         paint();
     }
 
-    function playBuffer(buffer, range, offsetBase, speed) {
+    function playBuffer(buffer, range, offsetBase, speed, bypassStems) {
         player.buffer = buffer;
+        player.bypassStems = !!bypassStems;
         player.range = range;
         player.offsetBase = offsetBase || 0;
         player.speed = speed || 1;
@@ -2278,13 +2367,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         player.buffer = null;
         player.range = null;
         player.speed = 1;
+        player.extraGainDb = 0;
+        player.bypassStems = false;
         paint();
     }
 
     function isPlainRange(opts) {
-        // громкость, тембр и скорость идут через ноды, в рендер их не запекаем
-        return (!opts.stems || !stemsNeeded(opts.stems))
-            && !opts.fadeIn && !opts.fadeOut;
+        // громкость, тембр, скорость и дорожки идут через ноды, в рендер их не запекаем
+        return !opts.fadeIn && !opts.fadeOut;
     }
 
     function hasSamplesInRange(start, end) {
@@ -2298,12 +2388,20 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (end - start < 0.001) { toast('Пустой фрагмент', 'error'); return; }
 
         const speed = app.speed || 1;
-        const renderOpts = { ...opts, gainDb: 0, lowDb: 0, highDb: 0, speed: 1 };
+        // дорожки идут через ноды; в рендер попадает только явный соло-прослух
+        const nodeStems = !opts.stems || sameStemGains(opts.stems, app.stemGains);
+        const renderOpts = {
+            ...opts,
+            gainDb: 0, lowDb: 0, highDb: 0, speed: 1,
+            stems: nodeStems ? null : opts.stems,
+        };
         const frames = Math.round((end - start) * app.buffer.sampleRate);
         const withSamples = opts.samples !== false && hasSamplesInRange(start, end);
         const processing = !isPlainRange(opts) || withSamples;
 
         stopPlayback();
+        // громкость фрагмента живёт в нодах — задаём её после сброса состояния
+        player.extraGainDb = (opts.gainDb ?? 0) - app.gainDb;
 
         let ctx;
         try {
@@ -2321,14 +2419,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
         try {
             if (!processing && start === 0 && Math.abs(end - app.buffer.duration) < 1e-6) {
-                playBuffer(app.buffer, { start, end }, 0, 1);
+                playBuffer(app.buffer, { start, end }, 0, 1, false);
             } else {
                 const data = renderRange(start, end, renderOpts);
                 if (!data) { hideToast(); return; }
                 const buffer = ctx.createBuffer(2, data.frames, data.sampleRate);
                 buffer.copyToChannel(data.left, 0);
                 buffer.copyToChannel(data.right, 1);
-                playBuffer(buffer, { start, end }, 0, speed);
+                playBuffer(buffer, { start, end }, 0, speed, !nodeStems);
             }
             hideToast();
         } catch (error) {
@@ -3434,7 +3532,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     function resetStems() {
         app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
         renderStems();
-        scheduleLive();
+        applyStemParams();
     }
 
     /* --------------------------------------------------- живые настройки */
@@ -4904,13 +5002,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const id = row.dataset.stem;
         app.stemGains[id] = Number(event.target.value) / 100;
         row.querySelector('.stem-val').textContent = `${event.target.value}%`;
-    });
-
-    // Пересборка звука только когда ползунок отпустили — без зависания при движении
-    el.stems.addEventListener('change', (event) => {
-        const row = event.target.closest('.stem');
-        if (!row || event.target.type !== 'range') return;
-        scheduleLive();
+        applyStemParams();
     });
 
     el.stems.addEventListener('click', (event) => {
@@ -5065,7 +5157,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         renderStems();
         applyLiveParams();
         applyLiveSpeed();
-        scheduleLive();
     });
 
     window.addEventListener('keydown', (event) => {
@@ -5188,6 +5279,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         get tuneRatios() {
             return lastTuneRatios ? Array.from(lastTuneRatios.slice(0, 8)).map((v) => Number(v.toFixed(4))) : null;
         },
+        // для проверок: тот же граф дорожек во временном контексте
+        stemGraph: buildStemGraph,
+        get buffer() { return app.buffer; },
+        get playerNodes() { return player.nodes; },
         voice(id, settings) {
             const sample = app.samples.find((item) => item.id === Number(id));
             if (!sample) return null;
