@@ -762,15 +762,17 @@
                             <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
                         <h2>Дорожки</h2>
                             <div class="spacer"></div>
-                            <button type="button" class="btn btn-ghost small" id="stemsZipBtn" title="Скачать все четыре дорожки одним архивом">⤓ Все дорожки</button>
+                            <button type="button" class="icon-btn" id="stemsPlayBtn" title="Послушать микс с текущими уровнями — без сохранения файла" aria-label="Прослушать дорожки">▶</button>
+                            <button type="button" class="btn btn-ghost small" id="stemsZipBtn" title="Сохранить четыре дорожки одним архивом ZIP">⤓ ZIP</button>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
                         <div class="stems" id="stems"></div>
                         <p class="note">
+                            Проверить без файлов: «▶» в шапке — послушать микс с текущими уровнями,
+                            «▶» в строке — послушать одну дорожку. Ползунки действуют сразу во время игры,
+                            без пересборки звука. «⤓ ZIP» и «⤓» в строке — это уже сохранение файлов.
                             Разделение DSP-методом: центр (Mid) уходит в вокал, бока (Side) — в инструментал,
-                            плюс полосы низа и верха. Это не нейросеть: инструменты разделяются приблизительно,
-                            зато мгновенно и без загрузки моделей. Ползунки действуют сразу во время игры,
-                            без пересборки звука; «▶» слушает только эту дорожку, «⤓» сохраняет её.
+                            плюс полосы низа и верха.
                         </p>
                     </section>
 
@@ -1325,7 +1327,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
-        stemsResetBtn: $('stemsResetBtn'), stemsZipBtn: $('stemsZipBtn'),
+        stemsResetBtn: $('stemsResetBtn'), stemsZipBtn: $('stemsZipBtn'), stemsPlayBtn: $('stemsPlayBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
@@ -5699,6 +5701,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
     el.stemsZipBtn.addEventListener('click', exportAllStems);
+    el.stemsPlayBtn.addEventListener('click', () => {
+        if (!app.buffer) return;
+        const range = exportRange();
+        playContext = { kind: 'mix' };
+        playRange(range.start, range.end, soundOptions());
+    });
     el.addClipBtn.addEventListener('click', addClipFromSelection);
     el.selClear.addEventListener('click', () => {
         app.selection = null;
