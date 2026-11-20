@@ -15,3 +15,14 @@ keys_2.mp3 — cat piano note c.wav — meku_a — CC0 1.0 — https://freesound
 noise_1.mp3 — Vinyl Noise, Crackles for Looping — f-r-a-g-i-l-e — CC0 1.0 — https://freesound.org/people/f-r-a-g-i-l-e/sounds/474813
 fx_1.mp3 — Percusive Noise Riser.wav — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/261415
 fx_2.mp3 — Sweep Downwards.wav — stair — CC0 1.0 — https://freesound.org/people/stair/sounds/387552
+bass_1.mp3 — bass G1.wav — mat_the_glad — CC0 1.0 — https://freesound.org/people/mat_the_glad/sounds/43943
+synth_1.mp3 — Synth Stab 1 — Stereo Surgeon — CC0 1.0 — https://freesound.org/people/Stereo%20Surgeon/sounds/265675
+crash_1.mp3 — cymbal-reversed-glassy-resonance.wav — burnttoys — CC0 1.0 — https://freesound.org/people/burnttoys/sounds/9523
+tom_1.mp3 — Yamaha Oak Custom Tom Mid.wav — pjcohen — CC0 1.0 — https://freesound.org/people/pjcohen/sounds/46554
+conga_1.mp3 — Kygo Tropical Conga Percussion Hit — Cloud-10 — CC0 1.0 — https://freesound.org/people/Cloud-10/sounds/678748
+block_1.mp3 — Wood block hit — thomasjaunism — CC0 1.0 — https://freesound.org/people/thomasjaunism/sounds/218460
+vox_1.mp3 — ahh.wav — filmbetrachterin — CC0 1.0 — https://freesound.org/people/filmbetrachterin/sounds/414227
+riser_1.mp3 — Riser Noise FX — NecoKen1 — CC0 1.0 — https://freesound.org/people/NecoKen1/sounds/627729
+click_1.mp3 — MPC Metronome click — trader_one — CC0 1.0 — https://freesound.org/people/trader_one/sounds/684106
+bell_1.mp3 — Sleigh bells hit — Selector — CC0 1.0 — https://freesound.org/people/Selector/sounds/369506
+snap_1.mp3 — Percussion Snap — purpleducttapehat — CC0 1.0 — https://freesound.org/people/purpleducttapehat/sounds/272114

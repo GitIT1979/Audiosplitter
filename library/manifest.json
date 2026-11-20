@@ -181,6 +181,138 @@
         "fx"
       ],
       "durationMs": 8000
+    },
+    {
+      "file": "bass_1.mp3",
+      "title": "bass G1.wav",
+      "author": "mat_the_glad",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/mat_the_glad/sounds/43943",
+      "tags": [
+        "bass"
+      ],
+      "durationMs": 3879
+    },
+    {
+      "file": "synth_1.mp3",
+      "title": "Synth Stab 1",
+      "author": "Stereo Surgeon",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Stereo%20Surgeon/sounds/265675",
+      "tags": [
+        "synth"
+      ],
+      "durationMs": 1875
+    },
+    {
+      "file": "crash_1.mp3",
+      "title": "cymbal-reversed-glassy-resonance.wav",
+      "author": "burnttoys",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/burnttoys/sounds/9523",
+      "tags": [
+        "crash"
+      ],
+      "durationMs": 3158
+    },
+    {
+      "file": "tom_1.mp3",
+      "title": "Yamaha Oak Custom Tom Mid.wav",
+      "author": "pjcohen",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/pjcohen/sounds/46554",
+      "tags": [
+        "tom"
+      ],
+      "durationMs": 1816
+    },
+    {
+      "file": "conga_1.mp3",
+      "title": "Kygo Tropical Conga Percussion Hit",
+      "author": "Cloud-10",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Cloud-10/sounds/678748",
+      "tags": [
+        "conga"
+      ],
+      "durationMs": 807
+    },
+    {
+      "file": "block_1.mp3",
+      "title": "Wood block hit",
+      "author": "thomasjaunism",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/thomasjaunism/sounds/218460",
+      "tags": [
+        "block"
+      ],
+      "durationMs": 284
+    },
+    {
+      "file": "vox_1.mp3",
+      "title": "ahh.wav",
+      "author": "filmbetrachterin",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/filmbetrachterin/sounds/414227",
+      "tags": [
+        "vox"
+      ],
+      "durationMs": 3520
+    },
+    {
+      "file": "riser_1.mp3",
+      "title": "Riser Noise FX",
+      "author": "NecoKen1",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/NecoKen1/sounds/627729",
+      "tags": [
+        "riser"
+      ],
+      "durationMs": 9000
+    },
+    {
+      "file": "click_1.mp3",
+      "title": "MPC Metronome click",
+      "author": "trader_one",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/trader_one/sounds/684106",
+      "tags": [
+        "click"
+      ],
+      "durationMs": 22
+    },
+    {
+      "file": "bell_1.mp3",
+      "title": "Sleigh bells hit",
+      "author": "Selector",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Selector/sounds/369506",
+      "tags": [
+        "bell"
+      ],
+      "durationMs": 882
+    },
+    {
+      "file": "snap_1.mp3",
+      "title": "Percussion Snap",
+      "author": "purpleducttapehat",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/purpleducttapehat/sounds/272114",
+      "tags": [
+        "snap"
+      ],
+      "durationMs": 1555
     }
   ]
 }
