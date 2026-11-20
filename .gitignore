@@ -4,3 +4,6 @@ build/
 *.log
 Thumbs.db
 desktop.ini
+
+# Looperman: условия запрещают перераздачу «как есть» — файлы остаются локально
+library/looperman-*.wav
