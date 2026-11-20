@@ -358,8 +358,10 @@
             background: rgba(255, 255, 255, 0.02);
         }
 
-        .lib-scope { padding: 8px 12px 0; }
+        .lib-scope { padding: 8px 12px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
         .lib-scope select { width: 100%; }
+        .lib-sort { display: flex; gap: 6px; align-items: center; }
+        .lib-sort select { width: auto; }
 
         .lib-edit { grid-template-columns: minmax(0, 1fr) auto !important; }
         .lib-edit-fields { display: grid; gap: 5px; }
@@ -657,6 +659,15 @@
                         </div>
                         <div class="lib-scope">
                             <select id="libFolder" aria-label="Папка библиотеки"></select>
+                            <div class="lib-sort">
+                                <select id="libSort" aria-label="Сортировка">
+                                    <option value="name">По имени</option>
+                                    <option value="duration">По длине</option>
+                                    <option value="date">По дате</option>
+                                    <option value="license">По лицензии</option>
+                                </select>
+                                <button type="button" class="icon-btn" id="libSortDir" aria-label="Направление сортировки" title="Направление">↑</button>
+                            </div>
                         </div>
                         <div class="lib-tags" id="libTags"></div>
                         <div class="lib-search">
@@ -1131,6 +1142,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         libCount: $('libCount'), libOpenBtn: $('libOpenBtn'), libFilesBtn: $('libFilesBtn'), libCreditsBtn: $('libCreditsBtn'),
         libSearch: $('libSearch'), libList: $('libList'), libInput: $('libInput'), libDirInput: $('libDirInput'), libTags: $('libTags'),
         libSaveBtn: $('libSaveBtn'), libReconnectBtn: $('libReconnectBtn'), libFolder: $('libFolder'),
+        libSort: $('libSort'), libSortDir: $('libSortDir'),
         voiceTarget: $('voiceTarget'), voiceDenoise: $('voiceDenoise'), voiceDenoiseVal: $('voiceDenoiseVal'),
         voiceTune: $('voiceTune'), voiceTuneVal: $('voiceTuneVal'), voiceSpeed: $('voiceSpeed'),
         voiceScale: $('voiceScale'), voiceKey: $('voiceKey'),
@@ -1166,6 +1178,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         pendingHandle: null,
         libTag: '',
         libFolder: '',
+        libSort: 'name',
+        libDir: 1,
         editingId: null,
         dropTime: null,
         busy: false,
@@ -3360,6 +3374,16 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             return haystack.includes(query);
         });
 
+        const collator = new Intl.Collator('ru');
+        items.sort((a, b) => {
+            let result = 0;
+            if (app.libSort === 'duration') result = a.buffer.duration - b.buffer.duration;
+            else if (app.libSort === 'date') result = (a.mtime || 0) - (b.mtime || 0);
+            else if (app.libSort === 'license') result = collator.compare(a.license || '', b.license || '');
+            else result = collator.compare(a.name, b.name);
+            return result * app.libDir;
+        });
+
         el.libCount.textContent = String(app.library.length);
         el.libCreditsBtn.disabled = app.library.length === 0;
 
@@ -3410,6 +3434,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                     file: file.name,
                     blob: file,
                     buffer,
+                    mtime: file.lastModified || Date.now(),
                     author: info.author || '',
                     license: info.license || 'неизвестно',
                     licenseUrl: info.licenseUrl || '',
@@ -3477,6 +3502,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                     name: info.title || name.replace(/\.[^.]+$/, ''),
                     file: name,
                     buffer,
+                    mtime: file.lastModified || Date.now(),
                     author: info.author || '',
                     license: info.license || 'неизвестно',
                     licenseUrl: info.licenseUrl || '',
@@ -3573,6 +3599,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 source: '',
                 tags: ['моё'],
                 folder: '',
+                mtime: Date.now(),
             });
             app.library.sort((a, b) => a.name.localeCompare(b.name));
             renderLibrary();
@@ -4446,6 +4473,18 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     el.libFolder.addEventListener('change', () => {
         app.libFolder = el.libFolder.value;
+        renderLibrary();
+    });
+
+    el.libSort.addEventListener('change', () => {
+        app.libSort = el.libSort.value;
+        renderLibrary();
+    });
+
+    el.libSortDir.addEventListener('click', () => {
+        app.libDir = -app.libDir;
+        el.libSortDir.textContent = app.libDir > 0 ? '↑' : '↓';
+        el.libSortDir.title = app.libDir > 0 ? 'По возрастанию' : 'По убыванию';
         renderLibrary();
     });
 
