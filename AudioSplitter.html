@@ -551,6 +551,7 @@
 
         .toast {
             position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+            pointer-events: none;
             max-width: min(620px, calc(100vw - 32px));
             padding: 11px 16px;
             border-radius: 12px;
@@ -3456,6 +3457,16 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             });
         }
         if (el.diagClose) el.diagClose.addEventListener('click', () => { el.diag.hidden = true; });
+        // панель висит поверх страницы — закрываем кликом мимо, чтобы не перекрывать кнопки
+        document.addEventListener('pointerdown', (event) => {
+            if (!el.diag || el.diag.hidden) return;
+            if (el.diag.contains(event.target)) return;
+            if (el.buildChip && el.buildChip.contains(event.target)) return;
+            el.diag.hidden = true;
+        }, true);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && el.diag && !el.diag.hidden) el.diag.hidden = true;
+        });
     }
 
     // ——— Свободная раскладка: карточки стоят в координатах поля, поле растёт ———
@@ -3815,6 +3826,17 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             window.addEventListener('pointerup', onUp);
             window.addEventListener('pointercancel', onCancel);
         });
+
+        // страховка: если жест потерялся, карточка не должна остаться «мёртвой»
+        const clearDragState = () => {
+            document.body.classList.remove('cards-dragging');
+            cardList().forEach((card) => card.classList.remove('is-dragging'));
+        };
+        window.addEventListener('blur', () => { if (drag) stopDrag(false); else clearDragState(); });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && drag) stopDrag(false);
+        });
+        setInterval(() => { if (!drag) clearDragState(); }, 1200);
 
         // клавиатура: Ctrl + ← / → — другая колонка, Ctrl + ↑ / ↓ — сдвиг по высоте
         el.columns.addEventListener('keydown', (event) => {
