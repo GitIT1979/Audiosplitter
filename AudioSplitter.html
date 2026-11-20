@@ -334,6 +334,15 @@
 
         /* ---------- библиотека ---------- */
 
+        .lib-check { width: 16px; height: 16px; accent-color: var(--accent); }
+        .lib-item.selecting { grid-template-columns: 20px minmax(0, 1fr) auto 28px 28px 28px; }
+        .lib-bulk {
+            display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+            padding: 8px 12px 0;
+        }
+        .lib-bulk[hidden] { display: none; }
+        .lib-bulk input { flex: 1 1 120px; min-width: 90px; }
+        .lib-bulk select { flex: 1 1 130px; }
         .lib-tags { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 12px 0; }
         .lib-tag {
             padding: 3px 9px; border-radius: 999px;
@@ -651,6 +660,7 @@
                             <h2>Библиотека</h2>
                             <span class="badge" id="libCount">0</span>
                             <div class="spacer"></div>
+                            <button type="button" class="btn btn-ghost small" id="libSelectBtn" title="Выбрать несколько сэмплов">☑</button>
                             <button type="button" class="btn btn-ghost small" id="libOpenBtn" title="Выбрать папку библиотеки">📂 Папка</button>
                             <button type="button" class="btn btn-ghost small" id="libFilesBtn" title="Выбрать отдельные файлы">＋ Файлы</button>
                             <button type="button" class="btn btn-ghost small" id="libReconnectBtn" hidden title="Подключить папку снова">🔓</button>
@@ -670,6 +680,18 @@
                             </div>
                         </div>
                         <div class="lib-tags" id="libTags"></div>
+                        <div class="lib-bulk" id="libBulk" hidden>
+                            <input type="text" id="libBulkFolder" placeholder="папка (— убрать)" aria-label="Папка для выбранных">
+                            <select id="libBulkLicense" aria-label="Лицензия для выбранных">
+                                <option value="">лицензия — не менять</option>
+                                <option value="CC0 1.0">CC0</option>
+                                <option value="CC BY 4.0">CC BY</option>
+                                <option value="Looperman (только личное)">Looperman</option>
+                                <option value="неизвестно">неизвестно</option>
+                            </select>
+                            <button type="button" class="btn btn-primary small" id="libBulkApply">Применить</button>
+                            <button type="button" class="btn btn-ghost small" id="libBulkClear">Снять</button>
+                        </div>
                         <div class="lib-search">
                             <input type="search" id="libSearch" placeholder="Поиск: название, тег, лицензия" aria-label="Поиск по библиотеке">
                         </div>
@@ -1142,7 +1164,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         libCount: $('libCount'), libOpenBtn: $('libOpenBtn'), libFilesBtn: $('libFilesBtn'), libCreditsBtn: $('libCreditsBtn'),
         libSearch: $('libSearch'), libList: $('libList'), libInput: $('libInput'), libDirInput: $('libDirInput'), libTags: $('libTags'),
         libSaveBtn: $('libSaveBtn'), libReconnectBtn: $('libReconnectBtn'), libFolder: $('libFolder'),
-        libSort: $('libSort'), libSortDir: $('libSortDir'),
+        libSort: $('libSort'), libSortDir: $('libSortDir'), libSelectBtn: $('libSelectBtn'),
+        libBulk: $('libBulk'), libBulkFolder: $('libBulkFolder'), libBulkLicense: $('libBulkLicense'),
+        libBulkApply: $('libBulkApply'), libBulkClear: $('libBulkClear'),
         voiceTarget: $('voiceTarget'), voiceDenoise: $('voiceDenoise'), voiceDenoiseVal: $('voiceDenoiseVal'),
         voiceTune: $('voiceTune'), voiceTuneVal: $('voiceTuneVal'), voiceSpeed: $('voiceSpeed'),
         voiceScale: $('voiceScale'), voiceKey: $('voiceKey'),
@@ -1180,6 +1204,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         libFolder: '',
         libSort: 'name',
         libDir: 1,
+        libSelectMode: false,
+        selected: new Set(),
         editingId: null,
         dropTime: null,
         busy: false,
@@ -3319,7 +3345,43 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const badge = row.querySelector('.lib-license');
         badge.textContent = item.license;
         badge.classList.add(licenseClass(item.license));
+        if (app.libSelectMode) {
+            row.classList.add('selecting');
+            row.draggable = false;
+            const check = document.createElement('input');
+            check.type = 'checkbox';
+            check.className = 'lib-check';
+            check.dataset.lib = 'check';
+            check.checked = app.selected.has(item.id);
+            row.prepend(check);
+        }
         return row;
+    }
+
+    function toggleLibSelect(item, row) {
+        if (app.selected.has(item.id)) app.selected.delete(item.id);
+        else app.selected.add(item.id);
+        const checkbox = row ? row.querySelector('.lib-check') : null;
+        if (checkbox) checkbox.checked = app.selected.has(item.id);
+        el.libBulkApply.textContent = app.selected.size ? `Применить (${app.selected.size})` : 'Применить';
+    }
+
+    function applyLibBulk() {
+        if (!app.selected.size) { toast('Ничего не выбрано', 'warn'); return; }
+        const folderRaw = el.libBulkFolder.value.trim();
+        const license = el.libBulkLicense.value;
+        let changed = 0;
+        app.library.forEach((item) => {
+            if (!app.selected.has(item.id)) return;
+            if (folderRaw) item.folder = (folderRaw === '-' || folderRaw === '—') ? '' : folderRaw;
+            if (license) item.license = license;
+            changed += 1;
+        });
+        el.libBulkFolder.value = '';
+        el.libBulkLicense.value = '';
+        renderLibrary();
+        if (app.libraryHandle) saveManifestToDisk(true);
+        toast(`Обновлено: ${changed}`, 'ok', 2600);
     }
 
     function renderLibTags() {
@@ -3385,6 +3447,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         });
 
         el.libCount.textContent = String(app.library.length);
+        el.libBulk.hidden = !app.libSelectMode;
+        el.libBulkApply.textContent = app.selected.size ? `Применить (${app.selected.size})` : 'Применить';
         el.libCreditsBtn.disabled = app.library.length === 0;
 
         if (!app.library.length) {
@@ -4460,15 +4524,20 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.libList.addEventListener('click', (event) => {
         const row = event.target.closest('.lib-item');
         if (!row) return;
-        const action = event.target.closest('[data-lib]');
         const item = app.library.find((entry) => entry.id === Number(row.dataset.id));
-        if (!action || !item) return;
-        const kind = action.dataset.lib;
-        if (kind === 'play') previewLibrarySample(item);
-        else if (kind === 'add') addLibrarySample(item);
-        else if (kind === 'edit') { app.editingId = item.id; renderLibrary(); }
-        else if (kind === 'save') saveLibEdit(row);
-        else if (kind === 'cancel') { app.editingId = null; renderLibrary(); }
+        if (!item) return;
+        const action = event.target.closest('[data-lib]');
+        if (action) {
+            const kind = action.dataset.lib;
+            if (kind === 'check') { toggleLibSelect(item, row); return; }
+            if (kind === 'play') previewLibrarySample(item);
+            else if (kind === 'add') addLibrarySample(item);
+            else if (kind === 'edit') { app.editingId = item.id; renderLibrary(); }
+            else if (kind === 'save') saveLibEdit(row);
+            else if (kind === 'cancel') { app.editingId = null; renderLibrary(); }
+            return;
+        }
+        if (app.libSelectMode) toggleLibSelect(item, row);
     });
 
     el.libFolder.addEventListener('change', () => {
@@ -4485,6 +4554,19 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         app.libDir = -app.libDir;
         el.libSortDir.textContent = app.libDir > 0 ? '↑' : '↓';
         el.libSortDir.title = app.libDir > 0 ? 'По возрастанию' : 'По убыванию';
+        renderLibrary();
+    });
+
+    el.libSelectBtn.addEventListener('click', () => {
+        app.libSelectMode = !app.libSelectMode;
+        if (!app.libSelectMode) app.selected.clear();
+        el.libSelectBtn.classList.toggle('is-on', app.libSelectMode);
+        renderLibrary();
+    });
+
+    el.libBulkApply.addEventListener('click', applyLibBulk);
+    el.libBulkClear.addEventListener('click', () => {
+        app.selected.clear();
         renderLibrary();
     });
 
