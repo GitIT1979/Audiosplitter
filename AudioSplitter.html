@@ -332,6 +332,34 @@
         .check-row input { accent-color: var(--accent); }
         .note { padding: 0 14px 12px; font-size: 0.72rem; color: var(--dim); line-height: 1.5; }
 
+        /* ---------- библиотека ---------- */
+
+        .lib-search { padding: 8px 12px 0; }
+        .lib-search input {
+            width: 100%; padding: 6px 9px;
+            border: 1px solid var(--line); border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3); color: var(--text); font-size: 0.78rem;
+        }
+        .lib-search input:focus { border-color: var(--accent); outline: none; }
+        .lib-list { padding: 8px 12px; display: grid; gap: 6px; max-height: 280px; overflow: auto; }
+        .lib-item {
+            display: grid; grid-template-columns: minmax(0, 1fr) auto 28px 28px;
+            gap: 7px; align-items: center;
+            padding: 6px 8px;
+            border: 1px solid var(--line); border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .lib-name { font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .lib-name small { display: block; color: var(--dim); font-size: 0.64rem; }
+        .lib-license {
+            font-size: 0.6rem; padding: 2px 6px; border-radius: 999px;
+            border: 1px solid currentColor; white-space: nowrap;
+        }
+        .lib-cc0 { color: #34d399; }
+        .lib-by { color: #38bdf8; }
+        .lib-user { color: #fbbf24; }
+        .lib-unknown { color: #94a3b8; }
+
         /* ---------- дорожки ---------- */
 
         .stems { padding: 10px 12px 4px; display: grid; gap: 8px; }
@@ -593,6 +621,24 @@
                         <p class="note">Сэмпл звучит с указанной секунды и подмешивается в прослушивание и экспорт. На волне его можно тянуть за плашку с названием.</p>
                         <p class="note note-warn" id="micHint" hidden></p>
                         <input type="file" id="sampleInput" accept="audio/*" multiple hidden>
+                    </section>
+
+                    <section class="card">
+                        <div class="card-head">
+                            <h2>Библиотека</h2>
+                            <span class="badge" id="libCount">0</span>
+                            <div class="spacer"></div>
+                            <button type="button" class="btn btn-ghost small" id="libOpenBtn" title="Выбрать папку библиотеки">📂 Папка</button>
+                            <button type="button" class="btn btn-ghost small" id="libFilesBtn" title="Выбрать отдельные файлы">＋ Файлы</button>
+                            <button type="button" class="btn btn-ghost small" id="libCreditsBtn" disabled title="Скачать список авторов и лицензий">credits</button>
+                        </div>
+                        <div class="lib-search">
+                            <input type="search" id="libSearch" placeholder="Поиск: название, тег, лицензия" aria-label="Поиск по библиотеке">
+                        </div>
+                        <div class="lib-list" id="libList"></div>
+                        <p class="note">Папка библиотеки: <code>manifest.json</code> + звуковые файлы. Автор и лицензия берутся из манифеста и видны в списке.</p>
+                        <input type="file" id="libInput" accept="audio/*" multiple hidden>
+                        <input type="file" id="libDirInput" webkitdirectory directory multiple hidden>
                     </section>
 
                     <section class="card">
@@ -1055,6 +1101,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
         samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'), micHint: $('micHint'),
+        libCount: $('libCount'), libOpenBtn: $('libOpenBtn'), libFilesBtn: $('libFilesBtn'), libCreditsBtn: $('libCreditsBtn'),
+        libSearch: $('libSearch'), libList: $('libList'), libInput: $('libInput'), libDirInput: $('libDirInput'),
         voiceTarget: $('voiceTarget'), voiceDenoise: $('voiceDenoise'), voiceDenoiseVal: $('voiceDenoiseVal'),
         voiceTune: $('voiceTune'), voiceTuneVal: $('voiceTuneVal'), voiceSpeed: $('voiceSpeed'),
         voiceScale: $('voiceScale'), voiceKey: $('voiceKey'),
@@ -1084,6 +1132,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         speed: 1,
         nextClipId: 1,
         nextSampleId: 1,
+        nextLibId: 1,
+        library: [],
         busy: false,
         stemGains: { vocal: 1, instrumental: 1, bass: 1, highs: 1 },
         gainDb: 0,
@@ -3107,6 +3157,144 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         });
     }
 
+    /* --------------------------------------------------------------- библиотека */
+
+    const LIB_AUDIO = /\.(mp3|wav|wave|ogg|oga|opus|m4a|aac|flac|aiff|aif)$/i;
+
+    function licenseClass(license) {
+        const value = String(license || '').toLowerCase();
+        if (!value || value.includes('неизвест')) return 'lib-unknown';
+        if (value.includes('cc0') || value.includes('public domain')) return 'lib-cc0';
+        if (value.includes('looperman') || value.includes('только личн') || value.includes('-nc')) return 'lib-user';
+        return 'lib-by';
+    }
+
+    function libNode(item) {
+        const row = document.createElement('div');
+        row.className = 'lib-item';
+        row.dataset.id = String(item.id);
+        row.innerHTML = `
+            <div class="lib-name"></div>
+            <span class="lib-license"></span>
+            <button type="button" class="icon-btn" data-lib="play" title="Прослушать" aria-label="Прослушать сэмпл">▶</button>
+            <button type="button" class="icon-btn" data-lib="add" title="Добавить в трек с позиции курсора" aria-label="Добавить в трек">＋</button>`;
+        const name = row.querySelector('.lib-name');
+        name.textContent = item.name;
+        const small = document.createElement('small');
+        small.textContent = `${fmt(item.buffer.duration)} · ${item.author || 'автор не указан'}`;
+        name.appendChild(small);
+        const badge = row.querySelector('.lib-license');
+        badge.textContent = item.license;
+        badge.classList.add(licenseClass(item.license));
+        return row;
+    }
+
+    function renderLibrary() {
+        const query = el.libSearch.value.trim().toLowerCase();
+        const items = app.library.filter((item) => {
+            if (!query) return true;
+            const haystack = [item.name, item.author, item.license, item.file, ...(item.tags || [])].join(' ').toLowerCase();
+            return haystack.includes(query);
+        });
+
+        el.libCount.textContent = String(app.library.length);
+        el.libCreditsBtn.disabled = app.library.length === 0;
+
+        if (!app.library.length) {
+            el.libList.innerHTML = '<p class="empty">Библиотека пуста. Нажмите «📂 Папка» и выберите папку <code>library</code> рядом с приложением.</p>';
+            return;
+        }
+        if (!items.length) {
+            el.libList.innerHTML = '<p class="empty">Ничего не найдено.</p>';
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+        items.forEach((item) => fragment.appendChild(libNode(item)));
+        el.libList.textContent = '';
+        el.libList.appendChild(fragment);
+    }
+
+    async function loadLibraryFiles(fileList) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        const ctx = getContext();
+
+        let manifest = null;
+        const manifestFile = files.find((file) => /(^|\/)manifest\.json$/i.test(file.webkitRelativePath || file.name));
+        if (manifestFile) {
+            try { manifest = JSON.parse(await manifestFile.text()); } catch (error) { console.warn('manifest', error); }
+        }
+        const meta = new Map();
+        if (manifest && Array.isArray(manifest.samples)) {
+            for (const item of manifest.samples) {
+                if (item && typeof item.file === 'string') meta.set(item.file.toLowerCase(), item);
+            }
+        }
+
+        const audio = files.filter((file) => LIB_AUDIO.test(file.name));
+        if (!audio.length) { toast('В выбранной папке нет звуковых файлов', 'error'); return; }
+
+        toast(`Читаю библиотеку: ${audio.length}…`, 'info', 0);
+        const loaded = [];
+        for (const file of audio) {
+            try {
+                const buffer = await decodeAudio(ctx, await file.arrayBuffer());
+                const info = meta.get(file.name.toLowerCase()) || {};
+                loaded.push({
+                    id: app.nextLibId++,
+                    name: info.title || file.name.replace(/\.[^.]+$/, ''),
+                    file: file.name,
+                    buffer,
+                    author: info.author || '',
+                    license: info.license || 'неизвестно',
+                    licenseUrl: info.licenseUrl || '',
+                    source: info.source || '',
+                    tags: Array.isArray(info.tags) ? info.tags : [],
+                });
+            } catch (error) {
+                console.error('library file', file.name, error);
+            }
+        }
+        hideToast();
+
+        if (!loaded.length) { toast('Не удалось прочитать ни один файл', 'error'); return; }
+        app.library = loaded.sort((a, b) => a.name.localeCompare(b.name));
+        renderLibrary();
+        toast(`Библиотека: ${loaded.length} сэмплов`, 'ok', 3200);
+    }
+
+    function previewLibrarySample(item) {
+        ensureRunning().then(() => {
+            stopPlayback();
+            playBuffer(item.buffer, { start: 0, end: item.buffer.duration }, 0, 1);
+        });
+    }
+
+    function addLibrarySample(item) {
+        app.samples.push({
+            id: app.nextSampleId++,
+            name: item.name,
+            buffer: item.buffer,
+            start: Number(app.playhead.toFixed(2)),
+            gain: 0.8,
+        });
+        renderSamples();
+        draw();
+        scheduleLive();
+        toast(`«${item.name}» добавлен в трек с ${fmt(app.playhead)}`, 'ok', 2600);
+    }
+
+    function downloadCredits() {
+        if (!app.library.length) return;
+        const lines = ['AudioSplitter — библиотека сэмплов', ''];        
+        app.library.forEach((item) => {
+            lines.push(`${item.name} — ${item.author || 'автор не указан'} — ${item.license}${item.source ? ` — ${item.source}` : ''}`);
+        });
+        download(new Blob([lines.join('\r\n')], { type: 'text/plain;charset=utf-8' }), 'credits.txt');
+        toast('credits.txt сохранён', 'ok', 2400);
+    }
+
     /* --------------------------------------------------------------- запись */
 
     const recorder = { active: false, media: null, stream: null, chunks: [], start: 0, count: 0 };
@@ -3784,6 +3972,26 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         event.target.value = '';
     });
 
+    el.libOpenBtn.addEventListener('click', () => el.libDirInput.click());
+    el.libFilesBtn.addEventListener('click', () => el.libInput.click());
+    [el.libInput, el.libDirInput].forEach((input) => {
+        input.addEventListener('change', (event) => {
+            const files = Array.from(event.target.files || []);
+            if (files.length) loadLibraryFiles(files);
+            event.target.value = '';
+        });
+    });
+    el.libSearch.addEventListener('input', renderLibrary);
+    el.libCreditsBtn.addEventListener('click', downloadCredits);
+    el.libList.addEventListener('click', (event) => {
+        const row = event.target.closest('.lib-item');
+        if (!row) return;
+        const item = app.library.find((entry) => entry.id === Number(row.dataset.id));
+        if (!item) return;
+        if (event.target.closest('[data-lib="play"]')) previewLibrarySample(item);
+        else if (event.target.closest('[data-lib="add"]')) addLibrarySample(item);
+    });
+
     el.gainDb.addEventListener('input', () => { app.gainDb = Number(el.gainDb.value); updateSoundLabels(); scheduleLive(); });
     el.lowDb.addEventListener('input', () => { app.lowDb = Number(el.lowDb.value); updateSoundLabels(); scheduleLive(); });
     el.highDb.addEventListener('input', () => { app.highDb = Number(el.highDb.value); updateSoundLabels(); scheduleLive(); });
@@ -3860,6 +4068,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.voiceKey.appendChild(option);
     });
     updateVoiceLabels();
+    renderLibrary();
     recordLabel(false);
     renderStems();
     renderSamples();
