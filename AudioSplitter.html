@@ -510,6 +510,11 @@
         .stem input[type="range"] { flex: 1 1 96px; min-width: 64px; width: auto; }
         .stem-val { flex: 0 0 40px; font-size: 0.7rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
         .stem .icon-btn { flex: 0 0 auto; }
+        .stem-meter {
+            flex: 0 0 34px; height: 4px; border-radius: 2px;
+            background: rgba(255, 255, 255, 0.09); overflow: hidden;
+        }
+        .stem-meter i { display: block; height: 100%; width: 0; background: var(--c, var(--accent)); transition: width 0.08s linear; }
 
         /* ---------- звук ---------- */
 
@@ -1499,7 +1504,16 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         instSum.connect(instrumental);
         instrumental.connect(out);
 
-        return { input, out, vocal, instrumental, bass, highs };
+        // измерители: показывают реальный уровень каждой ветки после регулятора
+        const meters = {};
+        [['vocal', vocal], ['instrumental', instrumental], ['bass', bass], ['highs', highs]].forEach(([id, node]) => {
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 512;
+            node.connect(analyser);
+            meters[id] = analyser;
+        });
+
+        return { input, out, vocal, instrumental, bass, highs, meters };
     }
 
     async function ensureRunning() {
@@ -2443,8 +2457,36 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
         source.start(0, player.offsetBase);
         app.playhead = clamp(currentPosition(), 0, app.buffer.duration);
+        startStemMeters();
         startFrames();
         paint();
+    }
+
+    let meterTimer = 0;
+
+    // Измерители дорожек: видно, что уровень реально применён
+    function startStemMeters() {
+        stopStemMeters();
+        const meters = player.nodes && player.nodes.stems && player.nodes.stems.meters;
+        if (!meters) return;
+        const data = new Float32Array(meters.vocal.fftSize);
+        meterTimer = setInterval(() => {
+            Object.keys(meters).forEach((id) => {
+                const analyser = meters[id];
+                analyser.getFloatTimeDomainData(data);
+                let sum = 0;
+                for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+                const level = Math.min(1, Math.sqrt(sum / data.length) * 2.4);
+                const bar = el.stems.querySelector(`.stem[data-stem="${id}"] .stem-meter i`);
+                if (bar) bar.style.width = (level * 100).toFixed(0) + '%';
+            });
+        }, 60);
+    }
+
+    function stopStemMeters() {
+        if (meterTimer) clearInterval(meterTimer);
+        meterTimer = 0;
+        if (el.stems) el.stems.querySelectorAll('.stem-meter i').forEach((bar) => { bar.style.width = '0%'; });
     }
 
     function playBuffer(buffer, range, offsetBase, speed, bypassStems) {
@@ -2477,6 +2519,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     function stopPlayback() {
         disposeSource();
         stopFrames();
+        stopStemMeters();
         player.playing = false;
         player.buffer = null;
         player.range = null;
@@ -4031,6 +4074,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 <span class="stem-name">${stem.name}<small>${stem.hint}</small></span>
                 <input type="range" min="0" max="150" step="1" value="${Math.round((app.stemGains[stem.id] ?? 1) * 100)}"
                        aria-label="${stem.name}: уровень">
+                <span class="stem-meter" aria-hidden="true"><i></i></span>
                 <span class="stem-val">${Math.round((app.stemGains[stem.id] ?? 1) * 100)}%</span>
                 <button type="button" class="icon-btn" data-stem-play="${stem.id}" title="Только эта дорожка">▶</button>
                 <button type="button" class="icon-btn" data-stem-export="${stem.id}" title="Сохранить дорожку">⤓</button>`;
