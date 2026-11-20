@@ -688,9 +688,9 @@
                     <span class="sel-time" id="selText">00:00.00 → 00:00.00</span>
                     <div class="spacer"></div>
                     <button type="button" class="icon-btn" id="selPlay" aria-label="Прослушать выделение" title="Прослушать">▶</button>
-                    <button type="button" class="btn btn-ghost small" id="selTrim" title="Оставить только выделенное">✂ Обрезать</button>
+                    <button type="button" class="btn btn-ghost small" id="selTrim" title="Оставить в треке только выделенное, остальное отбросить">✂ Оставить выделенное</button>
                     <button type="button" class="btn btn-ghost small" id="selDelete" title="Удалить выделенное из трека">🗑 Удалить</button>
-                    <button type="button" class="btn btn-primary small" id="selCut" title="Вырезать выделение в файл">✂ Cut</button>
+                    <button type="button" class="btn btn-primary small" id="selCut" title="Сохранить выделение отдельным файлом">✂ Вырезать в файл</button>
                     <button type="button" class="btn btn-ghost small" id="selAdd">+ Фрагмент из выделения</button>
                     <button type="button" class="btn btn-ghost small" id="selClear">Сбросить</button>
                 </div>
@@ -3987,7 +3987,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         updateTimeUi();
         resizeCanvas();
         draw();
-        toast(`Трек обрезан до ${fmt(out.duration)}`, 'ok', 3000);
+        toast(`Оставлено ${fmt(start)}–${fmt(end)}: трек стал ${fmt(out.duration)}`, 'ok', 3600);
     }
 
     // Удаляет выделенный участок из конкретной дорожки (записи или сэмпла)
@@ -5588,6 +5588,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
             // никакого автозапуска: играет только по кнопке ▶
             stopPlayback();
+            setTimeout(() => {
+                if (!player.playing) return;
+                stopPlayback();
+                toast('Автозапуск отключён — нажмите ▶', 'warn', 3200);
+            }, 350);
             toast(`Загружено: ${fmt(buffer.duration, false)} · нажмите ▶, чтобы слушать`, 'ok', 3200);
         } catch (error) {
             console.error(error);
