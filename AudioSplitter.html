@@ -334,6 +334,14 @@
 
         /* ---------- библиотека ---------- */
 
+        .lib-tags { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 12px 0; }
+        .lib-tag {
+            padding: 3px 9px; border-radius: 999px;
+            border: 1px solid var(--line); background: transparent;
+            color: var(--muted); font-size: 0.68rem; cursor: pointer;
+        }
+        .lib-tag:hover { border-color: rgba(255, 255, 255, 0.25); color: var(--text); }
+        .lib-tag.is-on { border-color: var(--accent); color: #f5d0fe; background: rgba(168, 85, 247, 0.18); }
         .lib-search { padding: 8px 12px 0; }
         .lib-search input {
             width: 100%; padding: 6px 9px;
@@ -632,6 +640,7 @@
                             <button type="button" class="btn btn-ghost small" id="libFilesBtn" title="Выбрать отдельные файлы">＋ Файлы</button>
                             <button type="button" class="btn btn-ghost small" id="libCreditsBtn" disabled title="Скачать список авторов и лицензий">credits</button>
                         </div>
+                        <div class="lib-tags" id="libTags"></div>
                         <div class="lib-search">
                             <input type="search" id="libSearch" placeholder="Поиск: название, тег, лицензия" aria-label="Поиск по библиотеке">
                         </div>
@@ -1102,7 +1111,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         resetSoundBtn: $('resetSoundBtn'),
         samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'), micHint: $('micHint'),
         libCount: $('libCount'), libOpenBtn: $('libOpenBtn'), libFilesBtn: $('libFilesBtn'), libCreditsBtn: $('libCreditsBtn'),
-        libSearch: $('libSearch'), libList: $('libList'), libInput: $('libInput'), libDirInput: $('libDirInput'),
+        libSearch: $('libSearch'), libList: $('libList'), libInput: $('libInput'), libDirInput: $('libDirInput'), libTags: $('libTags'),
         voiceTarget: $('voiceTarget'), voiceDenoise: $('voiceDenoise'), voiceDenoiseVal: $('voiceDenoiseVal'),
         voiceTune: $('voiceTune'), voiceTuneVal: $('voiceTuneVal'), voiceSpeed: $('voiceSpeed'),
         voiceScale: $('voiceScale'), voiceKey: $('voiceKey'),
@@ -1134,6 +1143,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         nextSampleId: 1,
         nextLibId: 1,
         library: [],
+        libTag: '',
+        dropTime: null,
         busy: false,
         stemGains: { vocal: 1, instrumental: 1, bass: 1, highs: 1 },
         gainDb: 0,
@@ -2431,6 +2442,18 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             g.stroke();
         }
 
+        if (app.dropTime != null) {
+            const dropX = timeToX(app.dropTime);
+            g.strokeStyle = '#34d399';
+            g.setLineDash([4, 4]);
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(dropX, waveTop);
+            g.lineTo(dropX, h);
+            g.stroke();
+            g.setLineDash([]);
+        }
+
         const px = clamp(timeToX(app.playhead), 0, w);
         g.strokeStyle = '#f9a8d4';
         g.lineWidth = 1.5;
@@ -2594,6 +2617,33 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }, { passive: false });
 
     canvas.addEventListener('dblclick', () => { if (app.buffer) zoomTo(1); });
+
+    // Перетаскивание сэмпла из библиотеки прямо на волну
+    canvas.addEventListener('dragover', (event) => {
+        if (!event.dataTransfer || Array.from(event.dataTransfer.types).indexOf('text/x-sample-id') === -1) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        const point = localPoint(event);
+        app.dropTime = xToTime(clamp(point.x, 0, cssW));
+        draw();
+    });
+
+    canvas.addEventListener('dragleave', () => {
+        if (app.dropTime != null) { app.dropTime = null; draw(); }
+    });
+
+    canvas.addEventListener('drop', (event) => {
+        const raw = event.dataTransfer ? event.dataTransfer.getData('text/x-sample-id') : '';
+        if (!raw) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const item = app.library.find((entry) => entry.id === Number(raw));
+        const point = localPoint(event);
+        const time = xToTime(clamp(point.x, 0, cssW));
+        app.dropTime = null;
+        if (item && app.buffer) addLibrarySample(item, time);
+        draw();
+    });
 
     /* -------------------------------------------------------------- фрагменты */
 
@@ -3173,6 +3223,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const row = document.createElement('div');
         row.className = 'lib-item';
         row.dataset.id = String(item.id);
+        row.draggable = true;
         row.innerHTML = `
             <div class="lib-name"></div>
             <span class="lib-license"></span>
@@ -3189,9 +3240,30 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return row;
     }
 
+    function renderLibTags() {
+        const tags = [];
+        app.library.forEach((item) => (item.tags || []).forEach((tag) => {
+            if (!tags.includes(tag)) tags.push(tag);
+        }));
+        el.libTags.textContent = '';
+        if (tags.length < 2) return;
+        const chip = (label, value) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `lib-tag${app.libTag === value ? ' is-on' : ''}`;
+            button.dataset.tag = value;
+            button.textContent = label;
+            return button;
+        };
+        el.libTags.appendChild(chip('Все', ''));
+        tags.slice(0, 10).forEach((tag) => el.libTags.appendChild(chip(tag, tag)));
+    }
+
     function renderLibrary() {
+        renderLibTags();
         const query = el.libSearch.value.trim().toLowerCase();
         const items = app.library.filter((item) => {
+            if (app.libTag && !(item.tags || []).includes(app.libTag)) return false;
             if (!query) return true;
             const haystack = [item.name, item.author, item.license, item.file, ...(item.tags || [])].join(' ').toLowerCase();
             return haystack.includes(query);
@@ -3245,6 +3317,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                     id: app.nextLibId++,
                     name: info.title || file.name.replace(/\.[^.]+$/, ''),
                     file: file.name,
+                    blob: file,
                     buffer,
                     author: info.author || '',
                     license: info.license || 'неизвестно',
@@ -3261,6 +3334,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (!loaded.length) { toast('Не удалось прочитать ни один файл', 'error'); return; }
         app.library = loaded.sort((a, b) => a.name.localeCompare(b.name));
         renderLibrary();
+        saveLibrary();
         toast(`Библиотека: ${loaded.length} сэмплов`, 'ok', 3200);
     }
 
@@ -3271,18 +3345,99 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         });
     }
 
-    function addLibrarySample(item) {
+    function addLibrarySample(item, at) {
+        const target = at != null ? at : app.playhead;
+        const start = Number(clamp(target, 0, Math.max(0, app.buffer.duration - 0.01)).toFixed(2));
         app.samples.push({
             id: app.nextSampleId++,
             name: item.name,
             buffer: item.buffer,
-            start: Number(app.playhead.toFixed(2)),
+            start,
             gain: 0.8,
         });
         renderSamples();
         draw();
         scheduleLive();
-        toast(`«${item.name}» добавлен в трек с ${fmt(app.playhead)}`, 'ok', 2600);
+        toast(`«${item.name}» добавлен в трек с ${fmt(start)}`, 'ok', 2600);
+    }
+
+    /* ------------------------------------------------ сохранение библиотеки */
+
+    const LIB_DB = 'audiosplitter';
+    const LIB_STORE = 'library';
+
+    function idbOpen() {
+        return new Promise((resolve, reject) => {
+            if (!window.indexedDB) { reject(new Error('IndexedDB недоступен')); return; }
+            const request = indexedDB.open(LIB_DB, 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(LIB_STORE)) db.createObjectStore(LIB_STORE);
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function idbSet(key, value) {
+        return idbOpen().then((db) => new Promise((resolve, reject) => {
+            const tx = db.transaction(LIB_STORE, 'readwrite');
+            tx.objectStore(LIB_STORE).put(value, key);
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onerror = () => { db.close(); reject(tx.error); };
+        }));
+    }
+
+    function idbGet(key) {
+        return idbOpen().then((db) => new Promise((resolve, reject) => {
+            const tx = db.transaction(LIB_STORE, 'readonly');
+            const request = tx.objectStore(LIB_STORE).get(key);
+            request.onsuccess = () => { db.close(); resolve(request.result); };
+            request.onerror = () => { db.close(); reject(request.error); };
+        }));
+    }
+
+    async function saveLibrary() {
+        try {
+            const items = app.library.map((item) => ({
+                name: item.name,
+                file: item.file,
+                blob: item.blob,
+                author: item.author,
+                license: item.license,
+                licenseUrl: item.licenseUrl,
+                source: item.source,
+                tags: item.tags,
+            }));
+            await idbSet('items', items);
+        } catch (error) {
+            console.warn('library save', error);
+        }
+    }
+
+    async function restoreLibrary() {
+        try {
+            const items = await idbGet('items');
+            if (!Array.isArray(items) || !items.length) return;
+            const ctx = getContext();
+            const loaded = [];
+            for (const saved of items) {
+                if (!saved || !saved.blob) continue;
+                try {
+                    const buffer = await decodeAudio(ctx, await saved.blob.arrayBuffer());
+                    loaded.push({ ...saved, id: app.nextLibId++, buffer });
+                } catch (error) {
+                    console.warn('library restore', saved.name, error);
+                }
+            }
+            if (loaded.length) {
+                app.library = loaded;
+                renderLibrary();
+                toast(`Библиотека восстановлена: ${loaded.length}`, 'ok', 2600);
+            }
+        } catch (error) {
+            console.warn('library restore', error);
+        }
     }
 
     function downloadCredits() {
@@ -3982,6 +4137,18 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         });
     });
     el.libSearch.addEventListener('input', renderLibrary);
+    el.libTags.addEventListener('click', (event) => {
+        const chip = event.target.closest('.lib-tag');
+        if (!chip) return;
+        app.libTag = chip.dataset.tag || '';
+        renderLibrary();
+    });
+    el.libList.addEventListener('dragstart', (event) => {
+        const row = event.target.closest('.lib-item');
+        if (!row) return;
+        event.dataTransfer.setData('text/x-sample-id', row.dataset.id);
+        event.dataTransfer.effectAllowed = 'copy';
+    });
     el.libCreditsBtn.addEventListener('click', downloadCredits);
     el.libList.addEventListener('click', (event) => {
         const row = event.target.closest('.lib-item');
@@ -4069,6 +4236,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     });
     updateVoiceLabels();
     renderLibrary();
+    restoreLibrary();
     recordLabel(false);
     renderStems();
     renderSamples();
