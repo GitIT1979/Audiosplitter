@@ -137,25 +137,22 @@
             background: #e9d5ff; border: 2px solid #a855f7;
         }
 
-        /* ---------- загрузка ---------- */
+        /* ---------- загрузка (внутри области волны) ---------- */
 
-        .drop {
-            display: grid;
-            place-items: center;
-            gap: 10px;
-            padding: 80px 24px;
-            border: 2px dashed rgba(148, 163, 184, 0.35);
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.02);
-            cursor: pointer;
-            text-align: center;
+        .wave-empty {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 8px; padding: 16px; text-align: center;
+            background: rgba(7, 11, 22, 0.55);
+            border: 1px dashed var(--line); border-radius: 12px;
             transition: border-color 0.2s, background 0.2s;
         }
-        .drop:hover, .drop.is-over { border-color: var(--accent); background: rgba(168, 85, 247, 0.06); }
-        .drop-icon { font-size: 2.6rem; }
-        .drop-title { font-size: 1.05rem; font-weight: 600; }
-        .drop-hint { font-size: 0.82rem; color: var(--muted); max-width: 640px; line-height: 1.55; }
-        .drop-formats { font-size: 0.75rem; color: var(--dim); }
+        .wave-empty[hidden] { display: none; }
+        body.is-dropping .wave-empty { border-color: var(--accent); background: rgba(168, 85, 247, 0.14); }
+        .wave-empty-icon { font-size: 1.5rem; line-height: 1; }
+        .wave-empty-title { font-size: 0.92rem; font-weight: 600; }
+        .wave-empty-hint { font-size: 0.72rem; color: var(--dim); max-width: 460px; }
+        @media (max-height: 700px) { .wave-empty-icon { display: none; } }
 
         /* ---------- карточки ---------- */
 
@@ -570,20 +567,8 @@
             <button type="button" class="btn btn-ghost" id="openBtn">Открыть файл</button>
         </header>
 
-        <section id="dropScreen">
-            <div class="drop" id="dropZone" role="button" tabindex="0" aria-label="Выбрать аудиофайл">
-                <div class="drop-icon">🎧</div>
-                <div class="drop-title">Перетащите трек или нажмите, чтобы выбрать</div>
-                <div class="drop-hint">
-                    Выделяйте фрагменты на волне, слушайте их, правьте длину и фейды, разделяйте трек на дорожки,
-                    подмешивайте сэмплы — и сохраняйте результат в MP3 или WAV.
-                </div>
-                <div class="drop-formats">MP3 · WAV · OGG/Opus · FLAC · M4A/AAC · AIFF — всё, что умеет декодировать браузер</div>
-            </div>
+        <main id="editor">
             <input type="file" id="fileInput" accept="audio/*" hidden>
-        </section>
-
-        <main id="editor" hidden>
             <section class="card">
                 <div class="transport">
                     <button type="button" class="play-btn" id="playBtn" aria-label="Воспроизвести">▶</button>
@@ -632,6 +617,12 @@
                 <div class="wave-wrap" id="waveWrap">
                     <canvas id="wave" role="img" aria-label="Волна трека: тяните мышью, чтобы выделить фрагмент"></canvas>
                     <div class="wave-hint" id="waveHint">Потяните по волне, чтобы выделить фрагмент · Ctrl + колесо — масштаб</div>
+                    <div class="wave-empty" id="waveEmpty">
+                        <div class="wave-empty-icon">🎧</div>
+                        <div class="wave-empty-title">Перетащите трек в окно или откройте файл</div>
+                        <div class="wave-empty-hint">MP3 · WAV · OGG/Opus · FLAC · M4A/AAC · AIFF — всё, что умеет декодировать браузер</div>
+                        <button type="button" class="btn btn-primary" id="waveOpenBtn">Открыть файл</button>
+                    </div>
                 </div>
                 <div class="selbar" id="selBar" hidden>
                     <span class="sel-label">Выделено</span>
@@ -1259,7 +1250,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     /* ------------------------------------------------------------ элементы */
 
     const el = {
-        dropScreen: $('dropScreen'), dropZone: $('dropZone'), fileInput: $('fileInput'), openBtn: $('openBtn'),
+        fileInput: $('fileInput'), openBtn: $('openBtn'), waveEmpty: $('waveEmpty'), waveOpenBtn: $('waveOpenBtn'),
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
         playBtn: $('playBtn'), stopBtn: $('stopBtn'), loopBtn: $('loopBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
         timeNow: $('timeNow'), timeTotal: $('timeTotal'), volume: $('volume'),
@@ -5035,8 +5026,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             el.fileName.textContent = app.fileName;
             updateFileMeta();
 
-            el.dropScreen.hidden = true;
-            el.editor.hidden = false;
+            updateEmptyState();
             el.waveHint.hidden = false;
 
             renderClips();
@@ -5081,11 +5071,23 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         };
     }
 
+    // Загрузка живёт в общем интерфейсе: пока трека нет — заглушка в области волны
+    function updateEmptyState() {
+        const has = !!app.buffer;
+        if (el.waveEmpty) el.waveEmpty.hidden = has;
+        if (el.waveHint) el.waveHint.hidden = !has || !!app.selection;
+        document.body.classList.toggle('has-track', has);
+        [el.playBtn, el.stopBtn, el.recordBtn, el.zoomIn, el.zoomOut, el.fitBtn, el.selectAllBtn].forEach((btn) => {
+            if (btn) btn.disabled = !has;
+        });
+    }
+
     /* ------------------------------------------------------------- события */
 
-    el.dropZone.addEventListener('click', () => el.fileInput.click());
-    el.dropZone.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); el.fileInput.click(); }
+    el.waveOpenBtn.addEventListener('click', () => el.fileInput.click());
+    el.waveEmpty.addEventListener('click', (event) => {
+        if (event.target.closest('button')) return;
+        el.fileInput.click();
     });
     el.fileInput.addEventListener('change', (event) => {
         const file = event.target.files && event.target.files[0];
@@ -5100,11 +5102,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     ['dragenter', 'dragover'].forEach((type) => {
         document.addEventListener(type, (event) => {
             event.preventDefault();
-            el.dropZone.classList.add('is-over');
+            document.body.classList.add('is-dropping');
         });
     });
     ['dragleave', 'drop'].forEach((type) => {
-        document.addEventListener(type, () => el.dropZone.classList.remove('is-over'));
+        document.addEventListener(type, () => document.body.classList.remove('is-dropping'));
     });
     document.addEventListener('drop', (event) => {
         event.preventDefault();
@@ -5487,6 +5489,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     recordLabel(false);
     renderStems();
     renderSamples();
+    updateEmptyState();
 
     window.audioSplitterDebug = {
         get state() {
