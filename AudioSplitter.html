@@ -3231,6 +3231,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     function updateTransportUi() {
         el.playBtn.textContent = player.playing ? '⏸' : '▶';
         el.playBtn.setAttribute('aria-label', player.playing ? 'Пауза' : 'Воспроизвести');
+        if (el.mixPreviewBtn) el.mixPreviewBtn.textContent = player.playing ? '■ Стоп' : '▶ Прослушать';
+        if (el.stemsPlayBtn) {
+            el.stemsPlayBtn.textContent = player.playing ? '■' : '▶';
+            el.stemsPlayBtn.setAttribute('aria-label', player.playing ? 'Остановить' : 'Прослушать дорожки');
+        }
         el.loopBtn.classList.toggle('is-on', app.loop);
         el.loopBtn.setAttribute('aria-pressed', String(app.loop));
     }
@@ -5098,8 +5103,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (el.stemsZipBtn) el.stemsZipBtn.disabled = !ready;
     }
 
+    // «Прослушать» — переключатель: второе нажатие убирает звук
     function previewMix() {
         if (!app.buffer) return;
+        if (player.playing) { stopPlayback(); return; }
         const range = exportRange();
         playContext = { kind: 'mix' };
         playRange(range.start, range.end, soundOptions());
@@ -5794,12 +5801,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
     el.stemsZipBtn.addEventListener('click', exportAllStems);
-    el.stemsPlayBtn.addEventListener('click', () => {
-        if (!app.buffer) return;
-        const range = exportRange();
-        playContext = { kind: 'mix' };
-        playRange(range.start, range.end, soundOptions());
-    });
+    el.stemsPlayBtn.addEventListener('click', previewMix);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
     el.selClear.addEventListener('click', () => {
         app.selection = null;
