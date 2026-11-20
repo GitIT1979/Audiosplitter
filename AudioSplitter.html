@@ -638,6 +638,8 @@
                             <div class="spacer"></div>
                             <button type="button" class="btn btn-ghost small" id="libOpenBtn" title="Выбрать папку библиотеки">📂 Папка</button>
                             <button type="button" class="btn btn-ghost small" id="libFilesBtn" title="Выбрать отдельные файлы">＋ Файлы</button>
+                            <button type="button" class="btn btn-ghost small" id="libReconnectBtn" hidden title="Подключить папку снова">🔓</button>
+                            <button type="button" class="btn btn-ghost small" id="libSaveBtn" disabled title="Записать manifest.json в папку">💾</button>
                             <button type="button" class="btn btn-ghost small" id="libCreditsBtn" disabled title="Скачать список авторов и лицензий">credits</button>
                         </div>
                         <div class="lib-tags" id="libTags"></div>
@@ -1112,6 +1114,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'), micHint: $('micHint'),
         libCount: $('libCount'), libOpenBtn: $('libOpenBtn'), libFilesBtn: $('libFilesBtn'), libCreditsBtn: $('libCreditsBtn'),
         libSearch: $('libSearch'), libList: $('libList'), libInput: $('libInput'), libDirInput: $('libDirInput'), libTags: $('libTags'),
+        libSaveBtn: $('libSaveBtn'), libReconnectBtn: $('libReconnectBtn'),
         voiceTarget: $('voiceTarget'), voiceDenoise: $('voiceDenoise'), voiceDenoiseVal: $('voiceDenoiseVal'),
         voiceTune: $('voiceTune'), voiceTuneVal: $('voiceTuneVal'), voiceSpeed: $('voiceSpeed'),
         voiceScale: $('voiceScale'), voiceKey: $('voiceKey'),
@@ -1143,6 +1146,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         nextSampleId: 1,
         nextLibId: 1,
         library: [],
+        libraryHandle: null,
+        pendingHandle: null,
         libTag: '',
         dropTime: null,
         busy: false,
@@ -3338,6 +3343,116 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         toast(`Библиотека: ${loaded.length} сэмплов`, 'ok', 3200);
     }
 
+    /* --------------------------------------------- папка на диске (FS Access) */
+
+    async function ensureHandlePermission(handle) {
+        const options = { mode: 'readwrite' };
+        if ((await handle.queryPermission(options)) === 'granted') return true;
+        return (await handle.requestPermission(options)) === 'granted';
+    }
+
+    async function pickLibraryDirectory() {
+        if (!window.showDirectoryPicker) { el.libDirInput.click(); return; }
+        try {
+            const handle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'audiosplitter-library' });
+            await loadLibraryDirectory(handle);
+        } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            console.warn('directory picker', error);
+            toast('Не удалось открыть папку — выбираю файлы', 'warn', 3000);
+            el.libDirInput.click();
+        }
+    }
+
+    async function loadLibraryDirectory(handle) {
+        if (!(await ensureHandlePermission(handle))) { toast('Нет доступа к папке', 'error'); return; }
+        const ctx = getContext();
+
+        let manifest = null;
+        try {
+            const fileHandle = await handle.getFileHandle('manifest.json');
+            manifest = JSON.parse(await (await fileHandle.getFile()).text());
+        } catch (error) { /* манифеста нет — не страшно */ }
+        const meta = new Map();
+        if (manifest && Array.isArray(manifest.samples)) {
+            manifest.samples.forEach((item) => { if (item && item.file) meta.set(item.file.toLowerCase(), item); });
+        }
+
+        toast('Читаю папку…', 'info', 0);
+        const loaded = [];
+        for await (const [name, entry] of handle.entries()) {
+            if (entry.kind !== 'file' || !LIB_AUDIO.test(name)) continue;
+            try {
+                const file = await entry.getFile();
+                const buffer = await decodeAudio(ctx, await file.arrayBuffer());
+                const info = meta.get(name.toLowerCase()) || {};
+                loaded.push({
+                    id: app.nextLibId++,
+                    name: info.title || name.replace(/\.[^.]+$/, ''),
+                    file: name,
+                    buffer,
+                    author: info.author || '',
+                    license: info.license || 'неизвестно',
+                    licenseUrl: info.licenseUrl || '',
+                    source: info.source || '',
+                    tags: Array.isArray(info.tags) ? info.tags : [],
+                });
+            } catch (error) {
+                console.warn('library file', name, error);
+            }
+        }
+        hideToast();
+
+        if (!loaded.length) { toast('В папке нет звуков', 'error'); return; }
+        app.library = loaded.sort((a, b) => a.name.localeCompare(b.name));
+        app.libraryHandle = handle;
+        app.pendingHandle = null;
+        el.libSaveBtn.disabled = false;
+        el.libReconnectBtn.hidden = true;
+        renderLibrary();
+        try { await idbSet('dirHandle', handle); } catch (error) { console.warn('handle save', error); }
+        toast(`Библиотека на диске: ${loaded.length}`, 'ok', 3200);
+    }
+
+    async function saveManifestToDisk() {
+        if (!app.libraryHandle) { toast('Папка не подключена', 'warn'); return; }
+        try {
+            const samples = app.library.map((item) => ({
+                file: item.file,
+                title: item.name,
+                author: item.author,
+                license: item.license,
+                licenseUrl: item.licenseUrl,
+                source: item.source,
+                tags: item.tags || [],
+            }));
+            const fileHandle = await app.libraryHandle.getFileHandle('manifest.json', { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify({ version: 1, samples }, null, 2));
+            await writable.close();
+            toast('manifest.json записан в папку', 'ok', 3200);
+        } catch (error) {
+            console.error(error);
+            toast('Не удалось записать манифест', 'error', 5000);
+        }
+    }
+
+    async function restoreLibraryHandle() {
+        try {
+            const handle = await idbGet('dirHandle');
+            if (!handle) return;
+            const permission = await handle.queryPermission({ mode: 'readwrite' });
+            if (permission === 'granted') {
+                await loadLibraryDirectory(handle);
+            } else {
+                app.pendingHandle = handle;
+                el.libReconnectBtn.hidden = false;
+            }
+        } catch (error) {
+            console.warn('handle restore', error);
+        }
+    }
+
     function previewLibrarySample(item) {
         ensureRunning().then(() => {
             stopPlayback();
@@ -3416,6 +3531,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
 
     async function restoreLibrary() {
+        if (app.library.length) return;
         try {
             const items = await idbGet('items');
             if (!Array.isArray(items) || !items.length) return;
@@ -4127,7 +4243,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         event.target.value = '';
     });
 
-    el.libOpenBtn.addEventListener('click', () => el.libDirInput.click());
+    el.libOpenBtn.addEventListener('click', pickLibraryDirectory);
     el.libFilesBtn.addEventListener('click', () => el.libInput.click());
     [el.libInput, el.libDirInput].forEach((input) => {
         input.addEventListener('change', (event) => {
@@ -4150,6 +4266,18 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         event.dataTransfer.effectAllowed = 'copy';
     });
     el.libCreditsBtn.addEventListener('click', downloadCredits);
+    el.libSaveBtn.addEventListener('click', saveManifestToDisk);
+    el.libReconnectBtn.addEventListener('click', async () => {
+        const handle = app.pendingHandle;
+        if (!handle) return;
+        try {
+            if (!(await ensureHandlePermission(handle))) { toast('Доступ к папке не выдан', 'error'); return; }
+            await loadLibraryDirectory(handle);
+        } catch (error) {
+            console.error(error);
+            toast('Не удалось подключить папку', 'error', 5000);
+        }
+    });
     el.libList.addEventListener('click', (event) => {
         const row = event.target.closest('.lib-item');
         if (!row) return;
@@ -4236,7 +4364,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     });
     updateVoiceLabels();
     renderLibrary();
-    restoreLibrary();
+    restoreLibraryHandle().then(() => {
+        if (!app.library.length) restoreLibrary();
+    });
     recordLabel(false);
     renderStems();
     renderSamples();
