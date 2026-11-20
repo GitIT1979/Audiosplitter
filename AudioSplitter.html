@@ -191,6 +191,38 @@
 
         .transport { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 11px 14px; }
 
+        /* запись с микрофона: одна полоса вместо диалогов */
+        .rec-bar {
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            margin: 0 14px 12px; padding: 10px 12px;
+            border: 1px solid var(--line); border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .rec-bar[hidden] { display: none; }
+        .rec-bar.is-live { border-color: #f87171; background: rgba(248, 113, 113, 0.08); }
+        .btn-rec {
+            display: inline-flex; align-items: center; gap: 6px;
+            border: 1px solid var(--line); border-radius: 10px;
+            background: var(--panel-2); color: var(--text);
+            font: inherit; font-size: 0.8rem; font-weight: 600;
+            padding: 8px 14px; cursor: pointer;
+        }
+        .btn-rec:hover { border-color: #f87171; }
+        .rec-bar.is-live .btn-rec { background: #f87171; border-color: #f87171; color: #1b0b0b; }
+        .rec-timer { font-variant-numeric: tabular-nums; font-size: 0.95rem; font-weight: 700; color: #f87171; }
+        .rec-info { flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .rec-info strong { font-size: 0.8rem; }
+        .rec-info span { font-size: 0.72rem; color: var(--muted); }
+        .rec-check { display: inline-flex; align-items: center; gap: 6px; font-size: 0.76rem; color: var(--muted); cursor: pointer; }
+        .rec-check input { accent-color: #f87171; }
+        .rec-check[hidden] { display: none; }
+        @media (max-width: 560px) {
+            .rec-bar { margin: 0 10px 10px; padding: 8px 10px; gap: 8px; }
+            .rec-info strong { display: none; }
+            .rec-info { flex: 1 1 100px; }
+            .btn-rec { padding: 7px 11px; }
+        }
+
         .play-btn {
             display: grid; place-items: center;
             width: 42px; height: 42px;
@@ -421,17 +453,19 @@
         /* ---------- дорожки ---------- */
 
         .stems { padding: 10px 12px 4px; display: grid; gap: 8px; }
+        /* flex + wrap: на узкой карточке кнопки переезжают на вторую строку, а не обрезаются */
         .stem {
-            display: grid;
-            grid-template-columns: 10px minmax(96px, 1.1fr) minmax(90px, 1fr) 42px 30px 30px;
+            display: flex;
+            flex-wrap: wrap;
             align-items: center;
             gap: 8px;
         }
-        .stem-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--accent)); }
-        .stem-name { font-size: 0.8rem; font-weight: 600; }
+        .stem-dot { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--accent)); }
+        .stem-name { flex: 1 1 92px; min-width: 70px; font-size: 0.8rem; font-weight: 600; }
         .stem-name small { display: block; font-size: 0.64rem; color: var(--dim); font-weight: 400; }
-        .stem input[type="range"] { width: 100%; }
-        .stem-val { font-size: 0.7rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+        .stem input[type="range"] { flex: 1 1 96px; min-width: 64px; width: auto; }
+        .stem-val { flex: 0 0 40px; font-size: 0.7rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+        .stem .icon-btn { flex: 0 0 auto; }
 
         /* ---------- звук ---------- */
 
@@ -447,6 +481,8 @@
         .take-info { margin-right: auto; }
 
         .samples { padding: 8px 12px; display: grid; gap: 7px; }
+        .sample.is-new { animation: sample-flash 2.4s ease-out; border-color: #34d399; }
+        @keyframes sample-flash { 0% { background: rgba(52, 211, 153, 0.22); } 100% { background: transparent; } }
         .sample {
             display: grid;
             grid-template-columns: minmax(0, 1fr) 70px 56px 28px 28px 28px 28px 28px;
@@ -569,6 +605,20 @@
                         <button type="button" class="btn btn-ghost small" id="fitBtn">Вписать</button>
                     </div>
                 </div>
+
+                <div class="rec-bar" id="recBar" hidden>
+                    <button type="button" class="btn-rec" id="recToggle">● Начать запись</button>
+                    <span class="rec-timer" id="recTimer" hidden>00:00.0</span>
+                    <div class="rec-info">
+                        <strong id="recTitle">Запись с микрофона</strong>
+                        <span id="recSub">начнётся с текущей позиции</span>
+                    </div>
+                    <label class="rec-check" id="recMonitorWrap" title="Играть трек, пока пишется микрофон">
+                        <input type="checkbox" id="recMonitor" checked>
+                        <span>Слышать трек</span>
+                    </label>
+                    <button type="button" class="icon-btn" id="recClose" title="Свернуть и остановить" aria-label="Свернуть запись">✕</button>
+                </div>
             </section>
 
             <section class="card">
@@ -653,6 +703,7 @@
                             <button type="button" class="grip" data-grip aria-label="Перетащить блок" title="Перетащить блок">⠿</button>
                         <h2>Дорожки</h2>
                             <div class="spacer"></div>
+                            <button type="button" class="btn btn-ghost small" id="stemsZipBtn" title="Скачать все четыре дорожки одним архивом">⤓ Все дорожки</button>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
                         <div class="stems" id="stems"></div>
@@ -797,7 +848,6 @@
                         <div class="card-head">
                             <h2>Звуки на треке</h2>
                             <div class="spacer"></div>
-                            <button type="button" class="btn btn-ghost small" id="sampleRecordBtn" title="Записать звук с микрофона">🎤 Записать</button>
                             <button type="button" class="btn btn-ghost small" id="addSampleBtn" title="Добавить внешний звук из файла">＋ Добавить</button>
                         </div>
                         <div class="samples" id="samples"></div>
@@ -1213,11 +1263,13 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
-        stemsResetBtn: $('stemsResetBtn'),
+        stemsResetBtn: $('stemsResetBtn'), stemsZipBtn: $('stemsZipBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
-        samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), sampleRecordBtn: $('sampleRecordBtn'), micHint: $('micHint'),
+        samples: $('samples'), addSampleBtn: $('addSampleBtn'), sampleInput: $('sampleInput'), micHint: $('micHint'),
+        recBar: $('recBar'), recToggle: $('recToggle'), recTimer: $('recTimer'), recTitle: $('recTitle'),
+        recSub: $('recSub'), recMonitor: $('recMonitor'), recMonitorWrap: $('recMonitorWrap'), recClose: $('recClose'),
         libCount: $('libCount'), libOpenBtn: $('libOpenBtn'), libFilesBtn: $('libFilesBtn'), libCreditsBtn: $('libCreditsBtn'),
         libSearch: $('libSearch'), libList: $('libList'), libInput: $('libInput'), libDirInput: $('libDirInput'), libTags: $('libTags'),
         libSaveBtn: $('libSaveBtn'), libReconnectBtn: $('libReconnectBtn'), libFolder: $('libFolder'),
@@ -2317,6 +2369,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         source.onended = () => {
             if (token !== player.token) return;
             player.source = null;
+            // микрофон не должен писаться в тишину после конца трека
+            if (recorder.active) { stopRecording(); return; }
             if (app.loop && player.range) {
                 startSource();
                 return;
@@ -4207,7 +4261,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     /* --------------------------------------------------------------- запись */
 
-    const recorder = { active: false, media: null, stream: null, chunks: [], start: 0, count: 0 };
+    const recorder = { active: false, media: null, stream: null, chunks: [], start: 0, startedAt: 0, count: 0 };
 
     const PAGES_URL = 'https://gitit1979.github.io/Audiosplitter/';
 
@@ -4258,11 +4312,64 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
     }
 
+    let recTimerId = 0;
+
+    // Панель записи: одна полоса с тремя понятными шагами — открыть, начать, остановить
+    function toggleRecBar() {
+        if (!el.recBar) return;
+        if (el.recBar.hidden) {
+            el.recBar.hidden = false;
+            updateRecBarState();
+        } else {
+            el.recBar.hidden = true;
+        }
+    }
+
+    function closeRecBar() {
+        if (el.recBar) el.recBar.hidden = true;
+    }
+
+    function updateRecBarState() {
+        if (!el.recBar) return;
+        const on = recorder.active;
+        el.recBar.classList.toggle('is-live', on);
+        el.recToggle.textContent = on ? '■ Остановить' : '● Начать запись';
+        el.recTimer.hidden = !on;
+        el.recMonitorWrap.hidden = on;
+        el.recTitle.textContent = on ? 'Идёт запись с микрофона' : 'Запись с микрофона';
+        if (on) {
+            el.recSub.textContent = `с ${fmt(recorder.start, false)} · микрофон пишется`;
+        } else {
+            const reason = micReason();
+            el.recSub.textContent = reason
+                ? 'нужен HTTPS — подробнее в подсказке ниже'
+                : `начнётся с ${fmt(app.playhead, false)}`;
+        }
+    }
+
+    function startRecTimer() {
+        stopRecTimer();
+        const tickTimer = () => {
+            if (!recorder.active) return;
+            const total = Math.max(0, (performance.now() - recorder.startedAt) / 1000);
+            const mm = String(Math.floor(total / 60)).padStart(2, '0');
+            el.recTimer.textContent = `${mm}:${(total % 60).toFixed(1).padStart(4, '0')}`;
+        };
+        tickTimer();
+        recTimerId = setInterval(tickTimer, 100);
+    }
+
+    function stopRecTimer() {
+        if (recTimerId) clearInterval(recTimerId);
+        recTimerId = 0;
+    }
+
     function recordLabel(on) {
         el.recordBtn.classList.toggle('is-recording', on);
         el.recordBtn.textContent = on ? '■' : '🎤';
         el.recordBtn.setAttribute('aria-label', on ? 'Остановить запись' : 'Записать с микрофона');
         el.recordBtn.title = on ? 'Остановить запись' : 'Записать дорожку с микрофона';
+        updateRecBarState();
     }
 
     async function startRecording() {
@@ -4309,19 +4416,32 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         recorder.active = true;
         recorder.start = app.playhead;
 
+        el.recBar.hidden = false;
         recordLabel(true);
 
-        // Сначала готовим и запускаем воспроизведение, и только потом включаем
-        // запись: иначе на длинном треке в начало записи попадает пауза рендера
-        playContext = { kind: 'mix' };
-        await playRange(recorder.start, app.buffer.duration, { ...soundOptions(), speed: 1 });
+        // Играть трек во время записи — по желанию: без наушников лучше выключить
+        const monitor = el.recMonitor ? el.recMonitor.checked : true;
+        if (monitor) {
+            playContext = { kind: 'mix' };
+            // Сначала готовим и запускаем воспроизведение, и только потом включаем
+            // запись: иначе на длинном треке в начало записи попадает пауза рендера
+            await playRange(recorder.start, app.buffer.duration, { ...soundOptions(), speed: 1 });
+        } else {
+            await ensureRunning();
+        }
+
         recorder.media.start(250);
-        toast('Запись пошла. Наденьте наушники — иначе микрофон запишет и трек.', 'info', 4200);
+        recorder.startedAt = performance.now();
+        startRecTimer();
+        toast(monitor
+            ? 'Запись пошла. Наденьте наушники — иначе микрофон запишет и трек.'
+            : 'Запись пошла: только микрофон, трек не играет.', 'info', 4200);
     }
 
     function stopRecording() {
         if (!recorder.active) return;
         recorder.active = false;
+        stopRecTimer();
         recordLabel(false);
         stopPlayback();
         try { recorder.media.stop(); } catch (error) { /* уже остановлен */ }
@@ -4351,7 +4471,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             });
             renderSamples();
             draw();
-            toast(`Записано ${fmt(buffer.duration)} — дорожка с ${fmt(start)}. Послушать вместе: «Сведение» → Прослушать`, 'ok', 5200);
+            updateRecBarState();
+            const row = el.samples.querySelector(`[data-id="${app.samples[app.samples.length - 1].id}"]`);
+            if (row) {
+                row.classList.add('is-new');
+                setTimeout(() => row.classList.remove('is-new'), 2600);
+                row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+            toast(`Записано ${fmt(buffer.duration)} — «Запись ${recorder.count}» с ${fmt(start)}. Послушать вместе: «Сведение» → Прослушать`, 'ok', 5200);
         } catch (error) {
             console.error(error);
             toast('Не удалось расшифровать запись', 'error', 6000);
@@ -4368,6 +4495,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.bounceBtn.disabled = !ready;
         el.perfBtn.disabled = !ready;
         el.freshBtn.disabled = !ready || !app.originalBuffer;
+        if (el.stemsZipBtn) el.stemsZipBtn.disabled = !ready;
     }
 
     function previewMix() {
@@ -4705,7 +4833,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
 
     async function exportStem(stemId) {
-        if (app.busy) return;
+        if (app.busy) { toast('Дождитесь окончания текущей операции', 'warn', 2600); return; }
         const range = exportRange();
         app.busy = true;
         try {
@@ -4717,6 +4845,122 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         } finally {
             app.busy = false;
             renderClips();
+        }
+    }
+
+    // ZIP без сжатия: WAV и MP3 уже сжаты, а внешняя зависимость не нужна
+    function makeZip(entries) {
+        const table = new Uint32Array(256);
+        for (let i = 0; i < 256; i++) {
+            let c = i;
+            for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+            table[i] = c >>> 0;
+        }
+        const crc32 = (bytes) => {
+            let c = 0xFFFFFFFF;
+            for (let i = 0; i < bytes.length; i++) c = table[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+            return (c ^ 0xFFFFFFFF) >>> 0;
+        };
+
+        const encoder = new TextEncoder();
+        const parts = [];
+        const central = [];
+        let offset = 0;
+
+        entries.forEach((entry) => {
+            const name = encoder.encode(entry.name);
+            const data = entry.data;
+            const crc = crc32(data);
+
+            const head = new DataView(new ArrayBuffer(30));
+            head.setUint32(0, 0x04034b50, true);
+            head.setUint16(4, 20, true);      // нужная версия
+            head.setUint16(6, 0x0800, true);  // имена в UTF-8
+            head.setUint16(8, 0, true);       // без сжатия
+            head.setUint16(10, 0, true);      // время
+            head.setUint16(12, 0x21, true);   // дата: 1980-01-01
+            head.setUint32(14, crc, true);
+            head.setUint32(18, data.length, true);
+            head.setUint32(22, data.length, true);
+            head.setUint16(26, name.length, true);
+            head.setUint16(28, 0, true);
+            parts.push(new Uint8Array(head.buffer), name, data);
+
+            const dir = new DataView(new ArrayBuffer(46));
+            dir.setUint32(0, 0x02014b50, true);
+            dir.setUint16(4, 20, true);
+            dir.setUint16(6, 20, true);
+            dir.setUint16(8, 0x0800, true);
+            dir.setUint16(10, 0, true);
+            dir.setUint16(12, 0, true);
+            dir.setUint16(14, 0x21, true);
+            dir.setUint32(16, crc, true);
+            dir.setUint32(20, data.length, true);
+            dir.setUint32(24, data.length, true);
+            dir.setUint16(28, name.length, true);
+            dir.setUint16(30, 0, true);
+            dir.setUint16(32, 0, true);
+            dir.setUint16(34, 0, true);
+            dir.setUint16(36, 0, true);
+            dir.setUint32(38, 0, true);
+            dir.setUint32(42, offset, true);
+            central.push(new Uint8Array(dir.buffer), name);
+
+            offset += 30 + name.length + data.length;
+        });
+
+        const centralSize = central.reduce((sum, part) => sum + part.length, 0);
+        const end = new DataView(new ArrayBuffer(22));
+        end.setUint32(0, 0x06054b50, true);
+        end.setUint16(8, entries.length, true);
+        end.setUint16(10, entries.length, true);
+        end.setUint32(12, centralSize, true);
+        end.setUint32(16, offset, true);
+
+        const zip = new Uint8Array(offset + centralSize + 22);
+        let pos = 0;
+        [...parts, ...central, new Uint8Array(end.buffer)].forEach((part) => {
+            zip.set(part, pos);
+            pos += part.length;
+        });
+        return zip;
+    }
+
+    // Все дорожки одним архивом: одна загрузка вместо четырёх
+    async function exportAllStems() {
+        if (!app.buffer) return;
+        if (app.busy) { toast('Дождитесь окончания текущей операции', 'warn', 2600); return; }
+        const range = exportRange();
+        const format = el.format.value;
+        const base = safeFile(app.fileName);
+        app.busy = true;
+        try {
+            const entries = [];
+            for (let i = 0; i < STEMS.length; i++) {
+                const stem = STEMS[i];
+                toast(`Готовлю дорожки… ${i + 1} из ${STEMS.length}`, 'info', 0);
+                await tick();
+                const data = renderRange(range.start, range.end, stemOptions(stem.id));
+                if (!data) continue;
+                if (format === 'wav') {
+                    const { buffer } = encodeWav(data.left, data.right, data.sampleRate);
+                    entries.push({ name: `${base}_${stem.id}.wav`, data: new Uint8Array(buffer) });
+                } else {
+                    const blob = await encodeMp3(data.left, data.right, data.sampleRate, 192, (progress) => {
+                        toast(`Кодирую ${stem.name.toLowerCase()}… ${Math.round(progress * 100)}%`, 'info', 0);
+                    });
+                    entries.push({ name: `${base}_${stem.id}.mp3`, data: new Uint8Array(await blob.arrayBuffer()) });
+                }
+            }
+            if (!entries.length) { toast('Нечего сохранять', 'error'); return; }
+            const zip = makeZip(entries);
+            download(new Blob([zip], { type: 'application/zip' }), `${base}_дорожки.zip`);
+            toast(`Сохранено: ${base}_дорожки.zip — ${entries.length} файла, ${(zip.length / 1048576).toFixed(1)} МБ`, 'ok', 4200);
+        } catch (error) {
+            console.error(error);
+            toast(`Не удалось собрать архив: ${error.message}`, 'error', 6000);
+        } finally {
+            app.busy = false;
         }
     }
 
@@ -4881,13 +5125,18 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     });
 
     el.recordBtn.addEventListener('click', () => {
+        if (recorder.active) { stopRecording(); return; }
+        toggleRecBar();
+    });
+
+    el.recToggle.addEventListener('click', () => {
         if (recorder.active) stopRecording();
         else startRecording();
     });
 
-    el.sampleRecordBtn.addEventListener('click', () => {
+    el.recClose.addEventListener('click', () => {
         if (recorder.active) stopRecording();
-        else startRecording();
+        closeRecBar();
     });
 
     el.voiceDenoise.addEventListener('input', updateVoiceLabels);
@@ -4918,6 +5167,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     initCardLayout();
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
+    el.stemsZipBtn.addEventListener('click', exportAllStems);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
     el.selClear.addEventListener('click', () => {
         app.selection = null;
@@ -5282,6 +5532,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         // для проверок: тот же граф дорожек во временном контексте
         stemGraph: buildStemGraph,
         get buffer() { return app.buffer; },
+        zip: makeZip,
         get playerNodes() { return player.nodes; },
         voice(id, settings) {
             const sample = app.samples.find((item) => item.id === Number(id));
