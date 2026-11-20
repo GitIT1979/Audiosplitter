@@ -376,6 +376,7 @@
             border: 1px solid currentColor; white-space: nowrap;
         }
         .lib-cc0 { color: #34d399; }
+        .lib-own { color: #a78bfa; }
         .lib-by { color: #38bdf8; }
         .lib-user { color: #fbbf24; }
         .lib-unknown { color: #94a3b8; }
@@ -408,7 +409,7 @@
         .samples { padding: 8px 12px; display: grid; gap: 7px; }
         .sample {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 70px 56px 28px 28px 28px 28px;
+            grid-template-columns: minmax(0, 1fr) 70px 56px 28px 28px 28px 28px 28px;
             align-items: center;
             gap: 7px;
             padding: 7px 8px;
@@ -464,7 +465,7 @@
             .stem-name small { display: none; }
             .clip-fields label { flex: 1 1 44%; }
             .clip-fields input { width: 100%; }
-            .sample { grid-template-columns: minmax(0, 1fr) 58px 44px 30px 30px 30px 30px; gap: 5px; }
+            .sample { grid-template-columns: minmax(0, 1fr) 58px 44px 30px 30px 30px 30px 30px; gap: 5px; }
             .sample input[type="number"] { width: 58px; }
             .icon-btn { width: 34px; height: 34px; }
             .btn { padding: 8px 12px; }
@@ -3163,6 +3164,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 <button type="button" class="icon-btn" data-act="play" title="Прослушать сэмпл" aria-label="Прослушать сэмпл">▶</button>
                 <button type="button" class="icon-btn" data-act="cut" title="Удалить выделенное из этой дорожки" aria-label="Удалить часть дорожки">✂</button>
                 <button type="button" class="icon-btn" data-act="export" title="Сохранить дорожку в файл" aria-label="Сохранить дорожку">⤓</button>
+                <button type="button" class="icon-btn" data-act="lib" title="Сохранить в библиотеку" aria-label="Сохранить в библиотеку">⤒</button>
                 <button type="button" class="icon-btn" data-act="del" title="Удалить" aria-label="Удалить сэмпл">✕</button>`;
             const name = row.querySelector('.sample-name');
             name.textContent = sample.name;
@@ -3237,6 +3239,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const value = String(license || '').toLowerCase();
         if (!value || value.includes('неизвест')) return 'lib-unknown';
         if (value.includes('cc0') || value.includes('public domain')) return 'lib-cc0';
+        if (value.includes('своя')) return 'lib-own';
         if (value.includes('looperman') || value.includes('только личн') || value.includes('-nc')) return 'lib-user';
         return 'lib-by';
     }
@@ -3521,6 +3524,67 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         } catch (error) {
             console.error(error);
             toast('Не удалось записать манифест', 'error', 5000);
+        }
+    }
+
+    async function saveSampleToLibrary(sample) {
+        if (!app.libraryHandle) {
+            toast('Сначала подключите папку библиотеки кнопкой «📂 Папка»', 'warn', 4500);
+            return;
+        }
+        if (app.busy) return;
+        app.busy = true;
+        toast('Сохраняю в библиотеку…', 'info', 0);
+        try {
+            const base = safeFile(sample.name) || 'sample';
+            const used = new Set(app.library.map((item) => item.file.toLowerCase()));
+            const left = sample.buffer.getChannelData(0);
+            const right = sample.buffer.numberOfChannels > 1 ? sample.buffer.getChannelData(1) : left;
+
+            let blob;
+            let name;
+            if (typeof lamejs !== 'undefined' && lamejs.Mp3Encoder) {
+                blob = await encodeMp3(left, right, sample.buffer.sampleRate, 192);
+                name = `${base}.mp3`;
+            } else {
+                const { buffer } = encodeWav(left, right, sample.buffer.sampleRate);
+                blob = new Blob([buffer], { type: 'audio/wav' });
+                name = `${base}.wav`;
+            }
+
+            const stem = name.replace(/\.[^.]+$/, '');
+            const ext = name.slice(stem.length);
+            let counter = 2;
+            while (used.has(name.toLowerCase())) { name = `${stem}_${counter}${ext}`; counter += 1; }
+
+            const fileHandle = await app.libraryHandle.getFileHandle(name, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+
+            app.library.push({
+                id: app.nextLibId++,
+                name: sample.name,
+                file: name,
+                buffer: sample.buffer,
+                author: 'своя запись',
+                license: 'своя запись',
+                licenseUrl: '',
+                source: '',
+                tags: ['моё'],
+                folder: '',
+            });
+            app.library.sort((a, b) => a.name.localeCompare(b.name));
+            renderLibrary();
+            await saveManifestToDisk(true);
+            hideToast();
+            toast(`«${sample.name}» теперь в библиотеке: ${name}`, 'ok', 3400);
+        } catch (error) {
+            console.error(error);
+            hideToast();
+            toast(`Не удалось сохранить в библиотеку: ${error.message}`, 'error', 6000);
+        } finally {
+            app.busy = false;
         }
     }
 
@@ -4300,6 +4364,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (!sample) return;
         if (event.target.closest('[data-act="play"]')) previewSample(sample);
         else if (event.target.closest('[data-act="cut"]')) deleteSampleSelection(sample);
+        else if (event.target.closest('[data-act="lib"]')) saveSampleToLibrary(sample);
         else if (event.target.closest('[data-act="export"]')) exportSample(sample);
         else if (event.target.closest('[data-act="del"]')) {
             app.samples = app.samples.filter((item) => item !== sample);
