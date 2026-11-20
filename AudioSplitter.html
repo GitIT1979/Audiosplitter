@@ -416,6 +416,9 @@
         /* ---------- сэмплы ---------- */
 
         .mix-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 14px 0; }
+        .take { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 10px 14px 0; font-size: 0.75rem; color: var(--muted); }
+        .take[hidden] { display: none; }
+        .take-info { margin-right: auto; }
 
         .samples { padding: 8px 12px; display: grid; gap: 7px; }
         .sample {
@@ -593,6 +596,17 @@
                             <button type="button" class="btn btn-ghost" id="mixMp3Btn" disabled>⤓ MP3</button>
                             <button type="button" class="btn btn-ghost" id="mixWavBtn" disabled>⤓ WAV</button>
                             <button type="button" class="btn btn-ghost" id="bounceBtn" disabled title="Применить обработку к треку">⏺ Зафиксировать</button>
+                        </div>
+                        <div class="mix-actions">
+                            <button type="button" class="btn btn-ghost" id="perfBtn" disabled title="Пишет то, что слышно, пока вы меняете звук">⏺ Записать исполнение</button>
+                            <button type="button" class="btn btn-ghost" id="freshBtn" disabled title="Вернуть исходный трек">↺ Чистый трек</button>
+                        </div>
+                        <div class="take" id="takePanel" hidden>
+                            <span class="take-info" id="takeInfo"></span>
+                            <button type="button" class="icon-btn" id="takePlay" title="Прослушать дубль">▶</button>
+                            <button type="button" class="btn btn-ghost small" id="takeSave">⤓</button>
+                            <button type="button" class="btn btn-ghost small" id="takeApply" title="Сделать трек этим дублем">⇪ В трек</button>
+                            <button type="button" class="icon-btn" id="takeDiscard" title="Удалить дубль">✕</button>
                         </div>
                         <p class="note">Сводит всё, что слышно: трек, дорожки с уровнями, запись с микрофона и сэмплы — со скоростью, громкостью и тембром. Если выделен фрагмент, сохраняется он.</p>
                     </section>
@@ -1167,6 +1181,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         libSort: $('libSort'), libSortDir: $('libSortDir'), libSelectBtn: $('libSelectBtn'),
         libBulk: $('libBulk'), libBulkFolder: $('libBulkFolder'), libBulkLicense: $('libBulkLicense'),
         libBulkApply: $('libBulkApply'), libBulkClear: $('libBulkClear'),
+        perfBtn: $('perfBtn'), freshBtn: $('freshBtn'), takePanel: $('takePanel'), takeInfo: $('takeInfo'),
+        takePlay: $('takePlay'), takeSave: $('takeSave'), takeApply: $('takeApply'), takeDiscard: $('takeDiscard'),
         voiceTarget: $('voiceTarget'), voiceDenoise: $('voiceDenoise'), voiceDenoiseVal: $('voiceDenoiseVal'),
         voiceTune: $('voiceTune'), voiceTuneVal: $('voiceTuneVal'), voiceSpeed: $('voiceSpeed'),
         voiceScale: $('voiceScale'), voiceKey: $('voiceKey'),
@@ -1198,6 +1214,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         nextSampleId: 1,
         nextLibId: 1,
         library: [],
+        originalBuffer: null,
+        take: null,
         libraryHandle: null,
         pendingHandle: null,
         libTag: '',
@@ -3969,6 +3987,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.mixMp3Btn.disabled = !ready;
         el.mixWavBtn.disabled = !ready;
         el.bounceBtn.disabled = !ready;
+        el.perfBtn.disabled = !ready;
+        el.freshBtn.disabled = !ready || !app.originalBuffer;
     }
 
     function previewMix() {
@@ -4066,6 +4086,156 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             app.busy = false;
             updateMixUi();
         }
+    }
+
+    /* ------------------------------------ запись исполнения и чистый трек */
+
+    const perf = { active: false, recorder: null, chunks: [], dest: null };
+
+    async function togglePerf() {
+        if (perf.active) { stopPerfRecording(); return; }
+        if (!app.buffer || app.busy) return;
+        if (typeof MediaRecorder === 'undefined') { toast('Запись вывода не поддерживается браузером', 'error'); return; }
+        let ctx;
+        try { ctx = await ensureRunning(); } catch (error) { toast('Нет доступа к аудио', 'error'); return; }
+        const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+            .find((type) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type));
+        if (!mime) { toast('Браузер не умеет писать звук', 'error'); return; }
+
+        perf.dest = ctx.createMediaStreamDestination();
+        player.gain.connect(perf.dest);
+        perf.chunks = [];
+        perf.recorder = new MediaRecorder(perf.dest.stream, { mimeType: mime });
+        perf.recorder.ondataavailable = (event) => { if (event.data && event.data.size) perf.chunks.push(event.data); };
+        perf.recorder.onstop = finalizeTake;
+        perf.active = true;
+        el.perfBtn.classList.add('is-recording');
+        el.perfBtn.textContent = '■ Остановить запись';
+        perf.recorder.start(250);
+        toast('Пишу то, что слышно. Меняйте звук на ходу — дубль соберётся целиком.', 'info', 4500);
+    }
+
+    function stopPerfRecording() {
+        if (!perf.active) return;
+        perf.active = false;
+        el.perfBtn.classList.remove('is-recording');
+        el.perfBtn.textContent = '⏺ Записать исполнение';
+        try { perf.recorder.stop(); } catch (error) { /* уже остановлен */ }
+        if (perf.dest) {
+            try { player.gain.disconnect(perf.dest); } catch (error) { /* уже отключён */ }
+            perf.dest = null;
+        }
+    }
+
+    async function finalizeTake() {
+        const type = perf.recorder ? perf.recorder.mimeType : 'audio/webm';
+        const blob = new Blob(perf.chunks, { type });
+        perf.chunks = [];
+        perf.recorder = null;
+        if (!blob.size) { toast('Дубль пустой', 'error'); return; }
+        try {
+            const buffer = await decodeAudio(getContext(), await blob.arrayBuffer());
+            app.take = buffer;
+            updateTakeUi();
+            toast(`Дубль готов: ${fmt(buffer.duration)} — можно послушать или сделать треком`, 'ok', 4200);
+        } catch (error) {
+            console.error(error);
+            toast('Не удалось расшифровать запись исполнения', 'error', 6000);
+        }
+    }
+
+    function updateTakeUi() {
+        el.takePanel.hidden = !app.take;
+        if (app.take) el.takeInfo.textContent = `Дубль: ${fmt(app.take.duration)}`;
+    }
+
+    async function exportBuffer(buffer, baseName) {
+        const left = buffer.getChannelData(0);
+        const right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
+        if (el.format.value === 'wav') {
+            const { buffer: wav } = encodeWav(left, right, buffer.sampleRate);
+            download(new Blob([wav], { type: 'audio/wav' }), `${safeFile(baseName)}.wav`);
+            toast(`Сохранено: ${safeFile(baseName)}.wav`, 'ok', 2600);
+            return;
+        }
+        toast('Кодирую MP3…', 'info', 0);
+        const blob = await encodeMp3(left, right, buffer.sampleRate, 192, (progress) => {
+            toast(`Кодирую MP3… ${Math.round(progress * 100)}%`, 'info', 0);
+        });
+        download(blob, `${safeFile(baseName)}.mp3`);
+        toast(`Сохранено: ${safeFile(baseName)}.mp3 (${Math.round(blob.size / 1024)} КБ)`, 'ok', 3000);
+    }
+
+    function applyTake() {
+        if (!app.take) return;
+        snapshot('трек из дубля');
+        stopPlayback();
+        app.buffer = app.take;
+        app.bufferId += 1;
+        app.samples = [];
+        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
+        app.gainDb = 0;
+        app.lowDb = 0;
+        app.highDb = 0;
+        app.speed = 1;
+        el.gainDb.value = '0';
+        el.lowDb.value = '0';
+        el.highDb.value = '0';
+        el.speed.value = '1';
+        updateSoundLabels();
+        app.playhead = 0;
+        app.selection = null;
+        app.zoom = 1;
+        app.view = { start: 0, end: app.buffer.duration };
+        peakCache = { key: '', min: null, max: null };
+        app.take = null;
+        updateTakeUi();
+        renderClips();
+        renderStems();
+        renderSamples();
+        updateSelectionUi();
+        updateFileMeta();
+        updateZoomUi();
+        updateTimeUi();
+        resizeCanvas();
+        draw();
+        toast('Дубль стал треком — исходник возвращается кнопкой «↺ Чистый трек»', 'ok', 4200);
+    }
+
+    function restoreFresh() {
+        if (!app.originalBuffer) return;
+        snapshot('возврат к чистому треку');
+        stopPlayback();
+        app.buffer = app.originalBuffer;
+        app.bufferId += 1;
+        app.samples = [];
+        app.take = null;
+        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
+        app.gainDb = 0;
+        app.lowDb = 0;
+        app.highDb = 0;
+        app.speed = 1;
+        el.gainDb.value = '0';
+        el.lowDb.value = '0';
+        el.highDb.value = '0';
+        el.speed.value = '1';
+        updateSoundLabels();
+        app.playhead = 0;
+        app.selection = null;
+        app.zoom = 1;
+        app.view = { start: 0, end: app.buffer.duration };
+        peakCache = { key: '', min: null, max: null };
+        updateTakeUi();
+        renderClips();
+        renderStems();
+        renderSamples();
+        updateSelectionUi();
+        updateFileMeta();
+        updateZoomUi();
+        updateTimeUi();
+        resizeCanvas();
+        draw();
+        toast('Трек снова чистый', 'ok', 2600);
     }
 
     // Отдельная дорожка (запись или сэмпл) в файл
@@ -4221,6 +4391,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             resetSession();
             app.buffer = buffer;
             app.bufferId += 1;
+            app.originalBuffer = buffer;
             app.fileName = file.name.replace(/\.[^./\\]+$/, '');
             app.view = { start: 0, end: buffer.duration };
             peakCache = { key: '', min: null, max: null };
@@ -4384,6 +4555,24 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.mixMp3Btn.addEventListener('click', () => exportMix('mp3'));
     el.mixWavBtn.addEventListener('click', () => exportMix('wav'));
     el.bounceBtn.addEventListener('click', bounceMix);
+    el.perfBtn.addEventListener('click', togglePerf);
+    el.freshBtn.addEventListener('click', restoreFresh);
+    el.takePlay.addEventListener('click', () => {
+        if (!app.take) return;
+        ensureRunning().then(() => {
+            stopPlayback();
+            playBuffer(app.take, { start: 0, end: app.take.duration }, 0, 1);
+        });
+    });
+    el.takeSave.addEventListener('click', async () => {
+        if (!app.take || app.busy) return;
+        app.busy = true;
+        try { await exportBuffer(app.take, `${app.fileName}_take`); }
+        catch (error) { console.error(error); toast('Не удалось сохранить дубль', 'error', 5000); }
+        finally { app.busy = false; }
+    });
+    el.takeApply.addEventListener('click', applyTake);
+    el.takeDiscard.addEventListener('click', () => { app.take = null; updateTakeUi(); });
 
     el.clips.addEventListener('click', (event) => {
         const card = event.target.closest('.clip');
