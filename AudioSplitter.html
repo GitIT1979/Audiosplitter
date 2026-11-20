@@ -53,7 +53,30 @@
         }
         .brand small { font-size: 0.68rem; font-weight: 500; color: var(--dim); margin-left: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
 
-        .file-block { min-width: 0; margin-left: auto; text-align: right; }
+        .build-chip {
+            border: 1px solid var(--line); border-radius: 999px; background: transparent;
+            color: var(--dim); font: inherit; font-size: 0.68rem; padding: 4px 10px;
+            cursor: pointer; white-space: nowrap;
+        }
+        .build-chip:hover { color: var(--text); border-color: var(--accent); }
+        .diag {
+            position: fixed; right: 16px; bottom: 16px; z-index: 60;
+            width: min(380px, calc(100vw - 24px));
+            background: #0d1324; border: 1px solid var(--line); border-radius: 14px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55); font-size: 0.76rem;
+            overflow: hidden;
+        }
+        .diag[hidden] { display: none; }
+        .diag-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+        .diag-head strong { font-size: 0.8rem; }
+        .diag-head .spacer { flex: 1; }
+        .diag-body { display: grid; gap: 6px; padding: 10px 12px 12px; max-height: 55vh; overflow: auto; }
+        .diag-row { display: flex; gap: 8px; align-items: baseline; }
+        .diag-row b { flex: 0 0 auto; font-weight: 700; }
+        .diag-row .ok { color: var(--ok); }
+        .diag-row .info { color: var(--dim); }
+        .diag-row .bad { color: var(--err); }
+        .diag-row .val { color: var(--muted); word-break: break-word; }
         .file-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; }
         .file-meta { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 
@@ -582,7 +605,17 @@
                 <div class="file-meta" id="fileMeta"></div>
             </div>
             <button type="button" class="btn btn-ghost" id="openBtn">Открыть файл</button>
+            <button type="button" class="build-chip" id="buildChip" title="Версия сборки. Нажмите — приложение проверит себя">сборка</button>
         </header>
+
+        <div class="diag" id="diag" hidden>
+            <div class="diag-head">
+                <strong>Проверка приложения</strong>
+                <div class="spacer"></div>
+                <button type="button" class="icon-btn" id="diagClose" aria-label="Закрыть">✕</button>
+            </div>
+            <div class="diag-body" id="diagBody"></div>
+        </div>
 
         <main id="editor">
             <input type="file" id="fileInput" accept="audio/*" hidden>
@@ -1275,6 +1308,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     const el = {
         fileInput: $('fileInput'), openBtn: $('openBtn'), waveEmpty: $('waveEmpty'), waveOpenBtn: $('waveOpenBtn'),
+        buildChip: $('buildChip'), diag: $('diag'), diagBody: $('diagBody'), diagClose: $('diagClose'),
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
         playBtn: $('playBtn'), stopBtn: $('stopBtn'), loopBtn: $('loopBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
         timeNow: $('timeNow'), timeTotal: $('timeTotal'), volume: $('volume'),
@@ -3271,6 +3305,112 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         resizeCanvas();
         draw();
         toast(`Удалено ${fmt(cut)} — трек стал ${fmt(app.buffer.duration)}`, 'ok', 3200);
+    }
+
+    // ——— Самопроверка: видно версию сборки и что именно не работает ———
+    function buildStamp() {
+        const stamp = new Date(document.lastModified);
+        if (!stamp || Number.isNaN(stamp.getTime())) return 'сборка';
+        const pad = (value) => String(value).padStart(2, '0');
+        return `сборка ${pad(stamp.getDate())}.${pad(stamp.getMonth() + 1)} ${pad(stamp.getHours())}:${pad(stamp.getMinutes())}`;
+    }
+
+    function countOverlaps() {
+        const items = cardList().map((card) => {
+            const state = cardState(card);
+            const x = parseInt(card.style.left, 10) || 0;
+            const y = parseInt(card.style.top, 10) || 0;
+            return { x, y, w: card.offsetWidth, h: card.offsetHeight, id: card.dataset.card };
+        });
+        let count = 0;
+        for (let i = 0; i < items.length; i += 1) {
+            for (let j = i + 1; j < items.length; j += 1) {
+                const a = items[i];
+                const b = items[j];
+                if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) count += 1;
+            }
+        }
+        return count;
+    }
+
+    function collectDiagnostics() {
+        const rows = [];
+        const add = (ok, label, value, info) => rows.push({ ok: ok ? 'ok' : (info ? 'info' : 'bad'), label, value });
+        const ctx = player.ctx;
+
+        add(true, 'Сборка', buildStamp());
+        add(location.protocol !== 'file:', 'Адрес', `${location.protocol}//${location.host || '(файл)'}${location.pathname}`);
+
+        let store = false;
+        try { localStorage.setItem('__probe', '1'); localStorage.removeItem('__probe'); store = true; } catch (error) { store = false; }
+        add(store, 'Память настроек', store ? 'доступна' : 'заблокирована браузером');
+
+        add(!!(window.AudioContext || window.webkitAudioContext), 'Web Audio',
+            ctx ? `${ctx.state}, ${Math.round(ctx.sampleRate)} Гц` : 'ещё не создан — появится после первого ▶', !ctx);
+
+        const graph = player.nodes && player.nodes.stems;
+        add(!!graph, 'Граф дорожек',
+            graph ? 'создан, 4 ветки' : 'создастся после первого ▶ (ползунки тогда станут слышны)', !graph);
+
+        add(true,
+            'Уровни дорожек',
+            `вокал ${Math.round(app.stemGains.vocal * 100)}%, инстр. ${Math.round(app.stemGains.instrumental * 100)}%, бас ${Math.round(app.stemGains.bass * 100)}%, верх ${Math.round(app.stemGains.highs * 100)}%`);
+
+        const reason = micReason();
+        add(!reason && typeof MediaRecorder !== 'undefined', 'Микрофон',
+            reason === 'https' ? 'браузер требует HTTPS — откройте https-версию'
+                : reason === 'api' ? 'браузер не умеет getUserMedia'
+                    : typeof MediaRecorder === 'undefined' ? 'нет MediaRecorder' : 'доступен');
+
+        add('download' in HTMLAnchorElement.prototype, 'Скачивание файлов',
+            'download' in HTMLAnchorElement.prototype ? 'поддерживается' : 'браузер не умеет сохранять файлы');
+
+        add(!!app.buffer, 'Трек',
+            app.buffer ? `${fmt(app.buffer.duration, false)} · ${app.buffer.numberOfChannels} кан. · ${Math.round(app.buffer.sampleRate / 100) / 10} кГц`
+                : 'не загружен', !app.buffer);
+
+        if (app.buffer) {
+            const frames = app.buffer.length;
+            const megabytes = Math.round((frames * app.buffer.numberOfChannels * 4) / 1048576);
+            add(true, 'Память трека', `${megabytes} МБ в декодированном виде`);
+        }
+
+        add(true, 'Воспроизведение', player.playing ? `идёт, ${fmt(currentPosition(), false)}` : 'остановлено');
+
+        const overlaps = countOverlaps();
+        add(overlaps === 0, 'Раскладка', overlaps ? `${overlaps} наложений карточек` : `без наложений, ${effCols()} колонки`);
+        add(document.body.classList.contains('has-track') === !!app.buffer, 'Интерфейс', 'состояние совпадает с загруженным треком');
+        return rows;
+    }
+
+    function renderDiagnostics() {
+        if (!el.diagBody) return;
+        const rows = collectDiagnostics();
+        el.diagBody.textContent = '';
+        rows.forEach((row) => {
+            const line = document.createElement('div');
+            line.className = 'diag-row';
+            const mark = document.createElement('b');
+            mark.className = row.ok;
+            mark.textContent = row.ok === 'ok' ? '✓' : row.ok === 'info' ? '•' : '✕';
+            const text = document.createElement('span');
+            text.className = 'val';
+            text.textContent = `${row.label}: ${row.value}`;
+            line.append(mark, text);
+            el.diagBody.appendChild(line);
+        });
+        el.diag.hidden = false;
+    }
+
+    function initDiagnostics() {
+        if (el.buildChip) {
+            el.buildChip.textContent = buildStamp();
+            el.buildChip.addEventListener('click', () => {
+                if (el.diag && !el.diag.hidden) { el.diag.hidden = true; return; }
+                renderDiagnostics();
+            });
+        }
+        if (el.diagClose) el.diagClose.addEventListener('click', () => { el.diag.hidden = true; });
     }
 
     // ——— Свободная раскладка: карточки стоят в координатах поля, поле растёт ———
@@ -5510,6 +5650,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.selAdd.addEventListener('click', addClipFromSelection);
     el.selCut.addEventListener('click', cutSelection);
     el.selTrim.addEventListener('click', trimToSelection);
+    initDiagnostics();
     initCardLayout();
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
