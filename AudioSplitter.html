@@ -772,8 +772,9 @@
                             Проверить без файлов: «▶» в шапке — послушать микс с текущими уровнями,
                             «▶» в строке — послушать одну дорожку. Ползунки действуют сразу во время игры,
                             без пересборки звука. «⤓ ZIP» и «⤓» в строке — это уже сохранение файлов.
-                            Разделение DSP-методом: центр (Mid) уходит в вокал, бока (Side) — в инструментал,
-                            плюс полосы низа и верха.
+                            Разделение DSP-методом: центр (моно) целиком уходит в «Вокал», бока (Side) — в «Инструментал»,
+                            плюс полосы низа и верха. Поэтому «Вокал» в ноль даёт минусовку без голоса;
+                            в сам вокал при этом попадает и центральный бас — его можно добрать ползунком «Бас».
                         </p>
                     </section>
 
@@ -1255,7 +1256,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     const PALETTE = ['#a855f7', '#ec4899', '#38bdf8', '#34d399', '#fbbf24', '#818cf8', '#f472b6', '#2dd4bf'];
 
     const STEMS = [
-        { id: 'vocal', name: 'Вокал', hint: 'центр, 150 Гц – 8 кГц', color: '#f472b6' },
+        { id: 'vocal', name: 'Вокал', hint: 'центр (моно)', color: '#f472b6' },
         { id: 'instrumental', name: 'Инструментал', hint: 'всё, кроме центра', color: '#38bdf8' },
         { id: 'bass', name: 'Бас', hint: 'ниже 140 Гц', color: '#34d399' },
         { id: 'highs', name: 'Верх', hint: 'выше 8 кГц', color: '#fbbf24' },
@@ -1489,7 +1490,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         mono.channelCountMode = 'explicit';
         mono.channelInterpretation = 'speakers';
         input.connect(mono);
-        const vocalOut = link(mono, filter('highpass', 150), filter('highpass', 150), filter('lowpass', 8000), filter('lowpass', 8000));
+        // вокал — чистый центр: фильтры ломали вычитание, и голос оставался в инструментале
+        const vocalOut = mono;
         const vocal = ctx.createGain();
         vocalOut.connect(vocal);
         vocal.connect(out);
@@ -1723,8 +1725,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             bassR: [makeFilter('lowpass', 140, rate), makeFilter('lowpass', 140, rate)],
             highL: [makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate)],
             highR: [makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate)],
-            vocalHp: [makeFilter('highpass', 150, rate), makeFilter('highpass', 150, rate)],
-            vocalLp: [makeFilter('lowpass', 8000, rate), makeFilter('lowpass', 8000, rate)],
+            // вокал — чистый центр без фильтров: иначе вычитание не срезает голос
+            vocalHp: [],
+            vocalLp: [],
         };
 
         for (let pos = 0; pos < frames; pos += BLOCK) {
@@ -4101,7 +4104,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 <span class="stem-meter" aria-hidden="true"><i></i></span>
                 <span class="stem-val">${Math.round((app.stemGains[stem.id] ?? 1) * 100)}%</span>
                 <button type="button" class="icon-btn" data-stem-play="${stem.id}" title="Только эта дорожка">▶</button>
-                <button type="button" class="icon-btn" data-stem-export="${stem.id}" title="Сохранить дорожку">⤓</button>`;
+                <button type="button" class="btn btn-ghost small" data-stem-export="${stem.id}" title="Скачать эту дорожку файлом">⤓ файл</button>`;
             el.stems.appendChild(row);
         });
         updateMixUi();
