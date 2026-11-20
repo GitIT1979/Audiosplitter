@@ -26,3 +26,9 @@ riser_1.mp3 — Riser Noise FX — NecoKen1 — CC0 1.0 — https://freesound.or
 click_1.mp3 — MPC Metronome click — trader_one — CC0 1.0 — https://freesound.org/people/trader_one/sounds/684106
 bell_1.mp3 — Sleigh bells hit — Selector — CC0 1.0 — https://freesound.org/people/Selector/sounds/369506
 snap_1.mp3 — Percussion Snap — purpleducttapehat — CC0 1.0 — https://freesound.org/people/purpleducttapehat/sounds/272114
+loop_1.mp3 — Tribe Drum Loop — PearceWilsonKing — CC0 1.0 — https://freesound.org/people/PearceWilsonKing/sounds/342465
+scratch_1.mp3 — Vocal scratch voice vinyl scratching one shot — Duisterwho — CC0 1.0 — https://freesound.org/people/Duisterwho/sounds/641343
+horn_1.mp3 — Horn Stabs Entrance — bevibeldesign — CC0 1.0 — https://freesound.org/people/bevibeldesign/sounds/350433
+flute_1.mp3 — Flute Play C - 14.wav — cms4f — CC0 1.0 — https://freesound.org/people/cms4f/sounds/159136
+string_1.mp3 — string pizzicato — PhonosUPF — CC0 1.0 — https://freesound.org/people/PhonosUPF/sounds/498490
+fx_3.mp3 — Deep Whoosh #1 — Kinoton — CC0 1.0 — https://freesound.org/people/Kinoton/sounds/351256

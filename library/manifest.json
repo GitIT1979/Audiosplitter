@@ -313,6 +313,78 @@
         "snap"
       ],
       "durationMs": 1555
+    },
+    {
+      "file": "loop_1.mp3",
+      "title": "Tribe Drum Loop",
+      "author": "PearceWilsonKing",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/PearceWilsonKing/sounds/342465",
+      "tags": [
+        "loop"
+      ],
+      "durationMs": 8275
+    },
+    {
+      "file": "scratch_1.mp3",
+      "title": "Vocal scratch voice vinyl scratching one shot",
+      "author": "Duisterwho",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Duisterwho/sounds/641343",
+      "tags": [
+        "scratch"
+      ],
+      "durationMs": 2750
+    },
+    {
+      "file": "horn_1.mp3",
+      "title": "Horn Stabs Entrance",
+      "author": "bevibeldesign",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/bevibeldesign/sounds/350433",
+      "tags": [
+        "horn"
+      ],
+      "durationMs": 1719
+    },
+    {
+      "file": "flute_1.mp3",
+      "title": "Flute Play C - 14.wav",
+      "author": "cms4f",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/cms4f/sounds/159136",
+      "tags": [
+        "flute"
+      ],
+      "durationMs": 5200
+    },
+    {
+      "file": "string_1.mp3",
+      "title": "string pizzicato",
+      "author": "PhonosUPF",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/PhonosUPF/sounds/498490",
+      "tags": [
+        "string"
+      ],
+      "durationMs": 923
+    },
+    {
+      "file": "fx_3.mp3",
+      "title": "Deep Whoosh #1",
+      "author": "Kinoton",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://freesound.org/people/Kinoton/sounds/351256",
+      "tags": [
+        "fx"
+      ],
+      "durationMs": 3155
     }
   ]
 }
