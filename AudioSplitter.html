@@ -653,7 +653,7 @@
                         <button type="button" class="icon-btn" id="zoomOut" aria-label="Уменьшить масштаб" title="Уменьшить (Ctrl + колесо)">−</button>
                         <span class="zoom-label" id="zoomLabel">×1</span>
                         <button type="button" class="icon-btn" id="zoomIn" aria-label="Увеличить масштаб" title="Увеличить (Ctrl + колесо)">+</button>
-                        <button type="button" class="btn btn-ghost small" id="fitBtn">Вписать</button>
+                        <button type="button" class="btn btn-ghost small" id="fitBtn" title="Показать весь трек в окне (клавиша 0)">Весь трек</button>
                     </div>
                 </div>
 
@@ -5963,7 +5963,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         } else if (event.key === '-' || event.key === '_') {
             zoomTo(app.zoom / 1.3);
         } else if (event.key === '0') {
-            // ноль — «весь трек»: вписать волну в окно, как кнопка «Вписать» или двойной клик
+            // ноль — «весь трек»: показать волну целиком, как кнопка «Весь трек» или двойной клик
             zoomTo(1);
         } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd') {
             if (active) { event.preventDefault(); duplicateClip(active); }
