@@ -767,14 +767,13 @@
                         <h2>Дорожки</h2>
                             <div class="spacer"></div>
                             <button type="button" class="icon-btn" id="stemsPlayBtn" title="Послушать микс с текущими уровнями — без сохранения файла" aria-label="Прослушать дорожки">▶</button>
-                            <button type="button" class="btn btn-ghost small" id="stemsZipBtn" title="Сохранить четыре дорожки одним архивом ZIP">⤓ ZIP</button>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
                         <div class="stems" id="stems"></div>
                         <p class="note">
                             Проверить без файлов: «▶» в шапке — послушать микс с текущими уровнями,
                             «▶» в строке — послушать одну дорожку. Ползунки действуют сразу во время игры,
-                            без пересборки звука. «⤓ ZIP» и «⤓» в строке — это уже сохранение файлов.
+                            без пересборки звука. «⤓ файл» в строке — это уже сохранение файла.
                             Разделение DSP-методом: центр (моно) целиком уходит в «Вокал», бока (Side) — в «Инструментал»,
                             плюс полосы низа и верха. Поэтому «Вокал» в ноль даёт минусовку без голоса;
                             в сам вокал при этом попадает и центральный бас — его можно добрать ползунком «Бас».
@@ -1320,7 +1319,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         let peak = 0;
         for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
             const data = buffer.getChannelData(ch);
-            for (let i = 0; i < data.length; i += 16) {
+            // каждый отсчёт: короткий клик между «пробами» раньше терялся, и пик занижался
+            for (let i = 0; i < data.length; i++) {
                 const v = Math.abs(data[i]);
                 if (v > peak) peak = v;
             }
@@ -1328,9 +1328,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return peak || 0;
     }
 
-    // Усиление с запасом: не даём превысить 0 dBFS, иначе получается грязный клиппинг
+    // Усиление с запасом: не даём превысить 0 dBFS, иначе получается грязный клиппинг.
+    // Спад и нейтраль проходим как есть: при 0 дБ громкость ровно 1, без лишнего приглушения
     function safeGain(db) {
         const wanted = dbToGain(db);
+        if (wanted <= 1) return wanted;
         if (app.peakBufferId !== app.bufferId) {
             app.bufferPeak = app.buffer ? peakOfBuffer(app.buffer) : 0;
             app.peakBufferId = app.bufferId;
@@ -1357,7 +1359,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
-        stemsResetBtn: $('stemsResetBtn'), stemsZipBtn: $('stemsZipBtn'), stemsPlayBtn: $('stemsPlayBtn'),
+        stemsResetBtn: $('stemsResetBtn'), stemsPlayBtn: $('stemsPlayBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
@@ -1412,6 +1414,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         libSort: 'name',
         libDir: 1,
         libSelectMode: false,
+        libDecoding: false,
         selected: new Set(),
         editingId: null,
         dropTime: null,
@@ -1486,8 +1489,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             const node = ctx.createBiquadFilter();
             node.type = type;
             node.frequency.value = freq;
-            // в Web Audio Q у lowpass/highpass задаётся в дБ: −3.01 дБ = 0.7071, как в офлайн-фильтре
-            node.Q.value = -3.0103;
+            // Q безразмерный (Баттерворт 0.7071), как в офлайн-фильтре: живое звучание совпадает с экспортом
+            node.Q.value = 0.7071;
             return node;
         };
         const link = (first, ...rest) => {
@@ -1635,8 +1638,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     // Скорость — это playbackRate источника, тоже без рендера
     function applyLiveSpeed() {
         if (!player.source || !player.ctx || !player.range) return;
-        const position = currentPosition();
-        player.offset = clamp(position - player.range.start, 0, player.range.end - player.range.start);
         player.speed = app.speed || 1;
         player.startedAt = player.ctx.currentTime;
         try {
@@ -1850,7 +1851,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             mixStemsInto(left, right, srcL, srcR, s0, frames, gains, rate);
         }
 
-        const gain = dbToGain(opts.gainDb ?? 0);
+        // то же ограничение по пику, что и в живом прослушивании: «слышу» = «сохранил»
+        const gain = safeGain(opts.gainDb ?? 0);
         if (gain !== 1) {
             for (let i = 0; i < frames; i++) { left[i] *= gain; right[i] *= gain; }
         }
@@ -1973,8 +1975,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
     }
 
-    // Спектральное вычитание: профиль шума — минимум модуля по кадрам
-    function denoiseChannel(data, rate, strength) {
+    // Спектральное вычитание: профиль шума — минимум модуля по кадрам.
+    // Асинхронная: периодически отдаёт управление, чтобы страница не замерзала
+    async function denoiseChannel(data, rate, strength) {
         const frame = 1024;
         const hop = 256;
         if (data.length < frame * 2) return;
@@ -1993,6 +1996,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 const mag = Math.hypot(re[b], im[b]);
                 if (mag < noise[b]) noise[b] = mag;
             }
+            if ((f & 255) === 255) await tick();
         }
 
         const alpha = 1.1 + strength * 2.4;
@@ -2015,6 +2019,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 out[off + i] += re[i] * win[i];
                 norm[off + i] += win[i] * win[i];
             }
+            if ((f & 255) === 255) await tick();
         }
 
         for (let i = 0; i < data.length; i++) {
@@ -2055,62 +2060,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return { freq: rate / (bestLag + delta), confidence: best };
     }
 
-    function resampleTo(data, length) {
-        const out = new Float32Array(length);
-        const ratio = data.length / Math.max(1, length);
-        for (let i = 0; i < length; i++) {
-            const pos = i * ratio;
-            const i0 = Math.min(data.length - 1, Math.floor(pos));
-            const i1 = Math.min(data.length - 1, i0 + 1);
-            const frac = pos - i0;
-            out[i] = data[i0] + (data[i1] - data[i0]) * frac;
-        }
-        return out;
-    }
-
-    // Растяжение по времени с поиском фазы — потом ресемплинг даёт сдвиг тона без смены длительности
-    function wsolaStretch(data, factor) {
-        const frame = 1024;
-        const hop = 256;
-        const search = 48;
-        if (data.length < frame + search + 4) return data.slice();
-        const outLen = Math.round(data.length * factor);
-        const out = new Float32Array(outLen + frame);
-        const norm = new Float32Array(outLen + frame);
-        const win = hannWindow(frame);
-        let inPos = 0;
-        let outPos = 0;
-        let prevCont = null;
-
-        while (outPos + frame <= outLen) {
-            let bestShift = 0;
-            if (prevCont) {
-                let best = -Infinity;
-                for (let d = -search; d <= search; d += 2) {
-                    const start = inPos + d;
-                    if (start < 0 || start + search >= data.length) continue;
-                    let sum = 0;
-                    for (let i = 0; i < search; i++) sum += data[start + i] * prevCont[i];
-                    if (sum > best) { best = sum; bestShift = d; }
-                }
-            }
-            const src = clamp(inPos + bestShift, 0, Math.max(0, data.length - frame - 1));
-            for (let i = 0; i < frame; i++) {
-                out[outPos + i] += data[src + i] * win[i];
-                norm[outPos + i] += win[i];
-            }
-            const contStart = clamp(src + hop, 0, Math.max(0, data.length - search));
-            prevCont = data.subarray(contStart, contStart + search);
-            inPos += hop * factor;
-            outPos += hop;
-        }
-
-        for (let i = 0; i < out.length; i++) {
-            if (norm[i] > 1e-4) out[i] /= norm[i];
-        }
-        return out.subarray(0, outLen);
-    }
-
     function shiftSegment(segment, ratio) {
         if (Math.abs(ratio - 1) < 1e-3) return segment;
         // Читаем сегмент быстрее/медленнее — тон смещается, длина остаётся
@@ -2125,12 +2074,13 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
 
     // Применяем по сегментам (≈0,25 с) с кроссфейдом: внутри сегмента сдвиг постоянный
-    function applyTuneRatios(data, rate, ratios, voiced, hop, frames) {
+    async function applyTuneRatios(data, rate, ratios, voiced, hop, frames) {
         const segLen = Math.max(2048, Math.round(rate * 0.25));
         const step = Math.max(1024, Math.round(segLen / 2));
         const acc = new Float32Array(data.length);
         const weight = new Float32Array(data.length);
         let previous = 1;
+        let segIndex = 0;
 
         for (let start = 0; start < data.length; start += step) {
             const end = Math.min(data.length, start + segLen);
@@ -2159,6 +2109,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 acc[start + i] += shifted[i] * w;
                 weight[start + i] += w;
             }
+            if ((segIndex++ & 31) === 31) await tick();
         }
 
         for (let i = 0; i < data.length; i++) {
@@ -2169,7 +2120,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     // Автотюн: определяем высоту кадра и тянем к ближайшей ноте лада
     let lastTuneRatios = null;
 
-    function autotuneChannel(data, rate, opts) {
+    async function autotuneChannel(data, rate, opts) {
         const frame = 2048;
         const hop = 1024;
         if (data.length < frame * 2) return;
@@ -2209,9 +2160,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             }
             smoothed += (target - smoothed) * coeff;
             ratios[f] = smoothed;
+            if ((f & 31) === 31) await tick();
         }
         lastTuneRatios = ratios;
-        applyTuneRatios(data, rate, ratios, voiced, hop, frames);
+        await applyTuneRatios(data, rate, ratios, voiced, hop, frames);
     }
 
     function compressChannel(data, rate) {
@@ -2227,7 +2179,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
     }
 
-    function processVoiceBuffer(sample, settings) {
+    async function processVoiceBuffer(sample, settings) {
         const src = sample.buffer;
         const rate = src.sampleRate;
         const channels = [];
@@ -2237,11 +2189,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             for (const channel of channels) makeFilter('highpass', 80, rate).process(channel);
         }
         if (settings.denoise > 0) {
-            for (const channel of channels) denoiseChannel(channel, rate, settings.denoise / 100);
+            for (const channel of channels) await denoiseChannel(channel, rate, settings.denoise / 100);
         }
         if (settings.tune > 0) {
             for (const channel of channels) {
-                autotuneChannel(channel, rate, {
+                await autotuneChannel(channel, rate, {
                     strength: settings.tune / 100,
                     speed: settings.speed,
                     scale: settings.scale,
@@ -2331,7 +2283,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         toast('Обрабатываю голос…', 'info', 0);
         await tick();
         try {
-            const buffer = processVoiceBuffer(sample, voiceSettings());
+            const buffer = await processVoiceBuffer(sample, voiceSettings());
             hideToast();
             playContext = null;
             stopPlayback();
@@ -2352,7 +2304,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         toast('Обрабатываю голос…', 'info', 0);
         await tick();
         try {
-            const processed = processVoiceBuffer(sample, voiceSettings());
+            const processed = await processVoiceBuffer(sample, voiceSettings());
             snapshot('обработка голоса');
             sample.buffer = processed;
             renderSamples();
@@ -2474,6 +2426,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return clamp(player.range.start + elapsed, player.range.start, player.range.end);
     }
 
+    // Предел курсора: обычно трек, а без трека — то, что играет прямо сейчас (сэмпл из библиотеки)
+    function playheadLimit() {
+        return app.buffer ? app.buffer.duration : (player.buffer ? player.buffer.duration : 0);
+    }
+
     function disposeSource() {
         player.token += 1;
         if (player.source) {
@@ -2516,7 +2473,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         };
 
         source.start(0, player.offsetBase);
-        app.playhead = clamp(currentPosition(), 0, app.buffer.duration);
+        app.playhead = clamp(currentPosition(), 0, playheadLimit());
         startStemMeters();
         startFrames();
         paint();
@@ -2562,7 +2519,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         stopFrames();
         const step = () => {
             if (!player.playing) return;
-            app.playhead = clamp(currentPosition(), 0, app.buffer.duration);
+            app.playhead = clamp(currentPosition(), 0, playheadLimit());
             paint();
             player.raf = requestAnimationFrame(step);
         };
@@ -2578,6 +2535,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     function stopPlayback() {
         disposeSource();
+        // сэмпл, запущенный поверх трека, глушится вместе со всем звуком
+        if (previewSource) {
+            try { previewSource.stop(); } catch (error) { /* уже остановлен */ }
+            previewSource = null;
+        }
         stopFrames();
         stopStemMeters();
         player.playing = false;
@@ -3024,6 +2986,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     window.addEventListener('pointermove', (event) => {
         if (!app.buffer) return;
+        // без drag мы нужны только над канвасом — не дёргаем DOM на каждом движении мыши
+        if (!drag) {
+            const rect = canvas.getBoundingClientRect();
+            if (event.clientX < rect.left || event.clientX > rect.right
+                || event.clientY < rect.top || event.clientY > rect.bottom) return;
+        }
         const point = localPoint(event);
 
         if (!drag) { updateCursor(point); return; }
@@ -3346,19 +3314,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             el.highDb.value = String(app.highDb);
             el.speed.value = String(app.speed);
             updateSoundLabels();
-            renderStems();
         }
-        app.zoom = 1;
-        app.view = { start: 0, end: app.buffer.duration };
-        peakCache = { key: '', min: null, max: null };
-        renderClips();
-        renderSamples();
-        updateSelectionUi();
-        updateFileMeta();
-        updateZoomUi();
-        updateTimeUi();
-        resizeCanvas();
-        draw();
+        refreshTrackUi();
         updateUndoUi();
         toast(`Отменено: ${state.label}`, 'ok', 2600);
     }
@@ -3447,7 +3404,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const ctx = player.ctx;
 
         add(true, 'Сборка', buildStamp());
-        add(location.protocol !== 'file:', 'Адрес', `${location.protocol}//${location.host || '(файл)'}${location.pathname}`);
+        const isFile = location.protocol === 'file:';
+        add(!isFile, 'Адрес',
+            `${location.protocol}//${location.host || '(файл)'}${location.pathname}${isFile ? ' — без папки библиотеки и микрофона' : ''}`,
+            isFile);
 
         let store = false;
         try { localStorage.setItem('__probe', '1'); localStorage.removeItem('__probe'); store = true; } catch (error) { store = false; }
@@ -4276,6 +4236,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     async function addSamples(files) {
         if (!files || !files.length) return;
+        if (!app.buffer) { toast('Сначала откройте трек — сэмплы кладутся поверх него', 'warn', 3600); return; }
         const ctx = getContext();
         let added = 0;
         for (const file of files) {
@@ -4330,6 +4291,33 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     /* --------------------------------------------------------------- библиотека */
 
     const LIB_AUDIO = /\.(mp3|wav|wave|ogg|oga|opus|m4a|aac|flac|aiff|aif)$/i;
+
+    // Буфер сэмпла библиотеки — декодируем при первом обращении, а не всей папкой на старте
+    async function libBuffer(item) {
+        if (!item.buffer) {
+            if (!item.blob) throw new Error('файл недоступен');
+            item.buffer = await decodeAudio(getContext(), await item.blob.arrayBuffer());
+        }
+        return item.buffer;
+    }
+
+    // Фоновая расшифровка всего списка — нужна, когда отсортировали по длине
+    async function ensureAllLibBuffers() {
+        if (app.libDecoding) return;
+        app.libDecoding = true;
+        try {
+            let done = 0;
+            for (const item of app.library) {
+                if (item.buffer) continue;
+                try { await libBuffer(item); } catch (error) { console.warn('library decode', item.file, error); }
+                done += 1;
+                if (app.libSort === 'duration' && done % 8 === 0) renderLibrary();
+            }
+            if (done && app.libSort === 'duration') renderLibrary();
+        } finally {
+            app.libDecoding = false;
+        }
+    }
 
     function licenseClass(license) {
         const value = String(license || '').toLowerCase();
@@ -4396,7 +4384,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const name = row.querySelector('.lib-name');
         name.textContent = item.name;
         const small = document.createElement('small');
-        small.textContent = `${fmt(item.buffer.duration)} · ${item.author || 'автор не указан'}`;
+        // до первой расшифровки длительности нет — показываем размер файла
+        const metaInfo = item.buffer
+            ? fmt(item.buffer.duration)
+            : `${Math.max(1, Math.round((item.blob ? item.blob.size : 0) / 1024))} КБ`;
+        small.textContent = `${metaInfo} · ${item.author || 'автор не указан'}`;
         name.appendChild(small);
         const badge = row.querySelector('.lib-license');
         badge.textContent = item.license;
@@ -4495,7 +4487,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const collator = new Intl.Collator('ru');
         items.sort((a, b) => {
             let result = 0;
-            if (app.libSort === 'duration') result = a.buffer.duration - b.buffer.duration;
+            if (app.libSort === 'duration') result = (a.buffer ? a.buffer.duration : 0) - (b.buffer ? b.buffer.duration : 0);
             else if (app.libSort === 'date') result = (a.mtime || 0) - (b.mtime || 0);
             else if (app.libSort === 'license') result = collator.compare(a.license || '', b.license || '');
             else result = collator.compare(a.name, b.name);
@@ -4525,7 +4517,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     async function loadLibraryFiles(fileList) {
         const files = Array.from(fileList || []);
         if (!files.length) return;
-        const ctx = getContext();
 
         let manifest = null;
         const manifestFile = files.find((file) => /(^|\/)manifest\.json$/i.test(file.webkitRelativePath || file.name));
@@ -4543,27 +4534,22 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (!audio.length) { toast('В выбранной папке нет звуковых файлов', 'error'); return; }
 
         toast(`Читаю библиотеку: ${audio.length}…`, 'info', 0);
+        // сами звуки не расшифровываем: список собирается по метаданным, буфер — по требованию
         const loaded = [];
         for (const file of audio) {
-            try {
-                const buffer = await decodeAudio(ctx, await file.arrayBuffer());
-                const info = meta.get(file.name.toLowerCase()) || {};
-                loaded.push({
-                    id: app.nextLibId++,
-                    name: info.title || file.name.replace(/\.[^.]+$/, ''),
-                    file: file.name,
-                    blob: file,
-                    buffer,
-                    mtime: file.lastModified || Date.now(),
-                    author: info.author || '',
-                    license: info.license || 'неизвестно',
-                    licenseUrl: info.licenseUrl || '',
-                    source: info.source || '',
-                    tags: Array.isArray(info.tags) ? info.tags : [],
-                });
-            } catch (error) {
-                console.error('library file', file.name, error);
-            }
+            const info = meta.get(file.name.toLowerCase()) || {};
+            loaded.push({
+                id: app.nextLibId++,
+                name: info.title || file.name.replace(/\.[^.]+$/, ''),
+                file: file.name,
+                blob: file,
+                mtime: file.lastModified || Date.now(),
+                author: info.author || '',
+                license: info.license || 'неизвестно',
+                licenseUrl: info.licenseUrl || '',
+                source: info.source || '',
+                tags: Array.isArray(info.tags) ? info.tags : [],
+            });
         }
         hideToast();
 
@@ -4597,7 +4583,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     async function loadLibraryDirectory(handle) {
         if (!(await ensureHandlePermission(handle))) { toast('Нет доступа к папке', 'error'); return; }
-        const ctx = getContext();
 
         let manifest = null;
         try {
@@ -4615,13 +4600,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             if (entry.kind !== 'file' || !LIB_AUDIO.test(name)) continue;
             try {
                 const file = await entry.getFile();
-                const buffer = await decodeAudio(ctx, await file.arrayBuffer());
                 const info = meta.get(name.toLowerCase()) || {};
                 loaded.push({
                     id: app.nextLibId++,
                     name: info.title || name.replace(/\.[^.]+$/, ''),
                     file: name,
-                    buffer,
+                    blob: file,
                     mtime: file.lastModified || Date.now(),
                     author: info.author || '',
                     license: info.license || 'неизвестно',
@@ -4712,6 +4696,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 id: app.nextLibId++,
                 name: sample.name,
                 file: name,
+                blob,
                 buffer: sample.buffer,
                 author: 'своя запись',
                 license: 'своя запись',
@@ -4751,20 +4736,37 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
     }
 
-    function previewLibrarySample(item) {
+    async function previewLibrarySample(item) {
+        let buffer;
+        try {
+            buffer = await libBuffer(item);
+        } catch (error) {
+            console.error(error);
+            toast(`Не удалось прочитать «${item.name}»`, 'error', 5000);
+            return;
+        }
         ensureRunning().then(() => {
             stopPlayback();
-            playBuffer(item.buffer, { start: 0, end: item.buffer.duration }, 0, 1);
+            playBuffer(buffer, { start: 0, end: buffer.duration }, 0, 1);
         });
     }
 
-    function addLibrarySample(item, at) {
+    async function addLibrarySample(item, at) {
+        if (!app.buffer) { toast('Сначала откройте трек — сэмпл кладётся на его волну', 'warn', 3600); return; }
+        let buffer;
+        try {
+            buffer = await libBuffer(item);
+        } catch (error) {
+            console.error(error);
+            toast(`Не удалось прочитать «${item.name}»`, 'error', 5000);
+            return;
+        }
         const target = at != null ? at : app.playhead;
         const start = Number(clamp(target, 0, Math.max(0, app.buffer.duration - 0.01)).toFixed(2));
         app.samples.push({
             id: app.nextSampleId++,
             name: item.name,
-            buffer: item.buffer,
+            buffer,
             start,
             gain: 0.8,
         });
@@ -4833,17 +4835,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         try {
             const items = await idbGet('items');
             if (!Array.isArray(items) || !items.length) return;
-            const ctx = getContext();
-            const loaded = [];
-            for (const saved of items) {
-                if (!saved || !saved.blob) continue;
-                try {
-                    const buffer = await decodeAudio(ctx, await saved.blob.arrayBuffer());
-                    loaded.push({ ...saved, id: app.nextLibId++, buffer });
-                } catch (error) {
-                    console.warn('library restore', saved.name, error);
-                }
-            }
+            // восстанавливаем только метаданные и блобы — расшифровка ленивая
+            const loaded = items
+                .filter((saved) => saved && saved.blob)
+                .map((saved) => ({ ...saved, id: app.nextLibId++, buffer: null }));
             if (loaded.length) {
                 app.library = loaded;
                 renderLibrary();
@@ -4856,7 +4851,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     function downloadCredits() {
         if (!app.library.length) return;
-        const lines = ['AudioSplitter — библиотека сэмплов', ''];        
+        const lines = ['AudioSplitter — библиотека сэмплов', ''];
         app.library.forEach((item) => {
             lines.push(`${item.name} — ${item.author || 'автор не указан'} — ${item.license}${item.source ? ` — ${item.source}` : ''}`);
         });
@@ -4946,9 +4941,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             el.recSub.textContent = `с ${fmt(recorder.start, false)} · микрофон пишется`;
         } else {
             const reason = micReason();
+            const from = app.buffer ? clamp(app.playhead, 0, app.buffer.duration) : 0;
+            const begins = app.buffer && from >= app.buffer.duration - 0.01 ? 0 : from;
             el.recSub.textContent = reason
                 ? 'нужен HTTPS — подробнее в подсказке ниже'
-                : `начнётся с ${fmt(app.playhead, false)}`;
+                : `начнётся с ${fmt(begins, false)}`;
         }
     }
 
@@ -5019,7 +5016,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         };
         recorder.media.onstop = finalizeRecording;
         recorder.active = true;
-        recorder.start = app.playhead;
+        // курсор в самом конце — играть нечего, начинаем с начала (как «▶»)
+        const from = clamp(app.playhead, 0, app.buffer.duration);
+        recorder.start = from >= app.buffer.duration - 0.01 ? 0 : from;
 
         el.recBar.hidden = false;
         recordLabel(true);
@@ -5100,7 +5099,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.bounceBtn.disabled = !ready;
         el.perfBtn.disabled = !ready;
         el.freshBtn.disabled = !ready || !app.originalBuffer;
-        if (el.stemsZipBtn) el.stemsZipBtn.disabled = !ready;
     }
 
     // «Прослушать» — переключатель: второе нажатие убирает звук
@@ -5110,6 +5108,36 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const range = exportRange();
         playContext = { kind: 'mix' };
         playRange(range.start, range.end, soundOptions());
+    }
+
+    // Общий сброс звука: дорожки и ползунки в нейтраль, подписи в норму
+    function resetSoundSettings() {
+        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
+        app.gainDb = 0;
+        app.lowDb = 0;
+        app.highDb = 0;
+        app.speed = 1;
+        el.gainDb.value = '0';
+        el.lowDb.value = '0';
+        el.highDb.value = '0';
+        el.speed.value = '1';
+        updateSoundLabels();
+    }
+
+    // Общий хвост после замены трека: волна и панели догоняют новое состояние
+    function refreshTrackUi() {
+        app.zoom = 1;
+        app.view = { start: 0, end: app.buffer.duration };
+        peakCache = { key: '', min: null, max: null };
+        renderClips();
+        renderStems();
+        renderSamples();
+        updateSelectionUi();
+        updateFileMeta();
+        updateZoomUi();
+        updateTimeUi();
+        resizeCanvas();
+        draw();
     }
 
     // Фиксация: впечатывает текущую обработку в трек, дальше работаем с готовым звуком
@@ -5126,6 +5154,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         out.copyToChannel(data.left, 0);
         out.copyToChannel(data.right, 1);
 
+        // скорость впечатана — таймлайн фрагментов сжимается вместе с треком
         const speed = app.speed || 1;
         app.buffer = out;
         app.bufferId += 1;
@@ -5136,30 +5165,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         app.samples = [];
         app.playhead = 0;
         app.selection = null;
-        app.zoom = 1;
-        app.view = { start: 0, end: out.duration };
-        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
-        app.gainDb = 0;
-        app.lowDb = 0;
-        app.highDb = 0;
-        app.speed = 1;
-        el.gainDb.value = '0';
-        el.lowDb.value = '0';
-        el.highDb.value = '0';
-        el.speed.value = '1';
-        updateSoundLabels();
-        peakCache = { key: '', min: null, max: null };
-
-        renderClips();
-        renderStems();
-        renderSamples();
-        updateSelectionUi();
-        updateFileMeta();
-        updateZoomUi();
-        updateTimeUi();
-        resizeCanvas();
-        draw();
-        toast(`Обработка зафиксирована: ${fmt(out.duration)}`, 'ok', 3200);
+        resetSoundSettings();
+        refreshTrackUi();
+        if (data.peak > 1.0001) toast('Обработка зафиксирована, но сигнал выше 0 dBFS — возможен клиппинг', 'warn', 5200);
+        else toast(`Обработка зафиксирована: ${fmt(out.duration)}`, 'ok', 3200);
     }
 
     // Сводит всё, что слышно: трек, дорожки, запись с микрофона, сэмплы, эффекты
@@ -5287,32 +5296,16 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         app.buffer = app.take;
         app.bufferId += 1;
         app.samples = [];
-        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
-        app.gainDb = 0;
-        app.lowDb = 0;
-        app.highDb = 0;
-        app.speed = 1;
-        el.gainDb.value = '0';
-        el.lowDb.value = '0';
-        el.highDb.value = '0';
-        el.speed.value = '1';
-        updateSoundLabels();
+        // фрагменты жили на старом таймлайне — подрезаем под длину дубля
+        app.clips = app.clips
+            .map((clip) => ({ ...clip, end: Math.min(clip.end, app.buffer.duration) }))
+            .filter((clip) => clip.end - clip.start >= MIN_LEN);
         app.playhead = 0;
         app.selection = null;
-        app.zoom = 1;
-        app.view = { start: 0, end: app.buffer.duration };
-        peakCache = { key: '', min: null, max: null };
+        resetSoundSettings();
         app.take = null;
         updateTakeUi();
-        renderClips();
-        renderStems();
-        renderSamples();
-        updateSelectionUi();
-        updateFileMeta();
-        updateZoomUi();
-        updateTimeUi();
-        resizeCanvas();
-        draw();
+        refreshTrackUi();
         toast('Дубль стал треком — исходник возвращается кнопкой «↺ Чистый трек»', 'ok', 4200);
     }
 
@@ -5324,31 +5317,15 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         app.bufferId += 1;
         app.samples = [];
         app.take = null;
-        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
-        app.gainDb = 0;
-        app.lowDb = 0;
-        app.highDb = 0;
-        app.speed = 1;
-        el.gainDb.value = '0';
-        el.lowDb.value = '0';
-        el.highDb.value = '0';
-        el.speed.value = '1';
-        updateSoundLabels();
+        // фрагменты могли выйти за границы вернувшегося исходника — подрезаем
+        app.clips = app.clips
+            .map((clip) => ({ ...clip, end: Math.min(clip.end, app.buffer.duration) }))
+            .filter((clip) => clip.end - clip.start >= MIN_LEN);
         app.playhead = 0;
         app.selection = null;
-        app.zoom = 1;
-        app.view = { start: 0, end: app.buffer.duration };
-        peakCache = { key: '', min: null, max: null };
+        resetSoundSettings();
         updateTakeUi();
-        renderClips();
-        renderStems();
-        renderSamples();
-        updateSelectionUi();
-        updateFileMeta();
-        updateZoomUi();
-        updateTimeUi();
-        resizeCanvas();
-        draw();
+        refreshTrackUi();
         toast('Трек снова чистый', 'ok', 2600);
     }
 
@@ -5455,122 +5432,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
     }
 
-    // ZIP без сжатия: WAV и MP3 уже сжаты, а внешняя зависимость не нужна
-    function makeZip(entries) {
-        const table = new Uint32Array(256);
-        for (let i = 0; i < 256; i++) {
-            let c = i;
-            for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-            table[i] = c >>> 0;
-        }
-        const crc32 = (bytes) => {
-            let c = 0xFFFFFFFF;
-            for (let i = 0; i < bytes.length; i++) c = table[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
-            return (c ^ 0xFFFFFFFF) >>> 0;
-        };
-
-        const encoder = new TextEncoder();
-        const parts = [];
-        const central = [];
-        let offset = 0;
-
-        entries.forEach((entry) => {
-            const name = encoder.encode(entry.name);
-            const data = entry.data;
-            const crc = crc32(data);
-
-            const head = new DataView(new ArrayBuffer(30));
-            head.setUint32(0, 0x04034b50, true);
-            head.setUint16(4, 20, true);      // нужная версия
-            head.setUint16(6, 0x0800, true);  // имена в UTF-8
-            head.setUint16(8, 0, true);       // без сжатия
-            head.setUint16(10, 0, true);      // время
-            head.setUint16(12, 0x21, true);   // дата: 1980-01-01
-            head.setUint32(14, crc, true);
-            head.setUint32(18, data.length, true);
-            head.setUint32(22, data.length, true);
-            head.setUint16(26, name.length, true);
-            head.setUint16(28, 0, true);
-            parts.push(new Uint8Array(head.buffer), name, data);
-
-            const dir = new DataView(new ArrayBuffer(46));
-            dir.setUint32(0, 0x02014b50, true);
-            dir.setUint16(4, 20, true);
-            dir.setUint16(6, 20, true);
-            dir.setUint16(8, 0x0800, true);
-            dir.setUint16(10, 0, true);
-            dir.setUint16(12, 0, true);
-            dir.setUint16(14, 0x21, true);
-            dir.setUint32(16, crc, true);
-            dir.setUint32(20, data.length, true);
-            dir.setUint32(24, data.length, true);
-            dir.setUint16(28, name.length, true);
-            dir.setUint16(30, 0, true);
-            dir.setUint16(32, 0, true);
-            dir.setUint16(34, 0, true);
-            dir.setUint16(36, 0, true);
-            dir.setUint32(38, 0, true);
-            dir.setUint32(42, offset, true);
-            central.push(new Uint8Array(dir.buffer), name);
-
-            offset += 30 + name.length + data.length;
-        });
-
-        const centralSize = central.reduce((sum, part) => sum + part.length, 0);
-        const end = new DataView(new ArrayBuffer(22));
-        end.setUint32(0, 0x06054b50, true);
-        end.setUint16(8, entries.length, true);
-        end.setUint16(10, entries.length, true);
-        end.setUint32(12, centralSize, true);
-        end.setUint32(16, offset, true);
-
-        const zip = new Uint8Array(offset + centralSize + 22);
-        let pos = 0;
-        [...parts, ...central, new Uint8Array(end.buffer)].forEach((part) => {
-            zip.set(part, pos);
-            pos += part.length;
-        });
-        return zip;
-    }
-
-    // Все дорожки одним архивом: одна загрузка вместо четырёх
-    async function exportAllStems() {
-        if (!app.buffer) return;
-        if (app.busy) { toast('Дождитесь окончания текущей операции', 'warn', 2600); return; }
-        const range = exportRange();
-        const format = el.format.value;
-        const base = safeFile(app.fileName);
-        app.busy = true;
-        try {
-            const entries = [];
-            for (let i = 0; i < STEMS.length; i++) {
-                const stem = STEMS[i];
-                toast(`Готовлю дорожки… ${i + 1} из ${STEMS.length}`, 'info', 0);
-                await tick();
-                const data = renderRange(range.start, range.end, stemOptions(stem.id));
-                if (!data) continue;
-                if (format === 'wav') {
-                    const { buffer } = encodeWav(data.left, data.right, data.sampleRate);
-                    entries.push({ name: `${base}_${stem.id}.wav`, data: new Uint8Array(buffer) });
-                } else {
-                    const blob = await encodeMp3(data.left, data.right, data.sampleRate, 192, (progress) => {
-                        toast(`Кодирую ${stem.name.toLowerCase()}… ${Math.round(progress * 100)}%`, 'info', 0);
-                    });
-                    entries.push({ name: `${base}_${stem.id}.mp3`, data: new Uint8Array(await blob.arrayBuffer()) });
-                }
-            }
-            if (!entries.length) { toast('Нечего сохранять', 'error'); return; }
-            const zip = makeZip(entries);
-            download(new Blob([zip], { type: 'application/zip' }), `${base}_дорожки.zip`);
-            toast(`Сохранено: ${base}_дорожки.zip — ${entries.length} файла, ${(zip.length / 1048576).toFixed(1)} МБ`, 'ok', 4200);
-        } catch (error) {
-            console.error(error);
-            toast(`Не удалось собрать архив: ${error.message}`, 'error', 6000);
-        } finally {
-            app.busy = false;
-        }
-    }
-
     /* ------------------------------------------------------------- загрузка */
 
     function resetSession() {
@@ -5581,18 +5442,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         app.activeClipId = null;
         app.playhead = 0;
         app.zoom = 1;
-        app.speed = 1;
-        app.stemGains = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
-        app.gainDb = 0;
-        app.lowDb = 0;
-        app.highDb = 0;
-        el.gainDb.value = '0';
-        el.lowDb.value = '0';
-        el.highDb.value = '0';
-        el.speed.value = '1';
-        updateSoundLabels();
+        app.take = null;
+        resetSoundSettings();
         history.length = 0;
         updateUndoUi();
+        updateTakeUi();
         renderStems();
         renderSamples();
         renderClips();
@@ -5625,6 +5479,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             app.bufferId += 1;
             app.originalBuffer = buffer;
             app.bufferPeak = peakOfBuffer(buffer);
+            app.peakBufferId = app.bufferId;
             app.fileName = file.name.replace(/\.[^./\\]+$/, '');
             app.view = { start: 0, end: buffer.duration };
             peakCache = { key: '', min: null, max: null };
@@ -5645,11 +5500,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             resizeCanvas();
             draw();
 
-            stopPlayback();
-            toast(`Загружено: ${fmt(buffer.duration, false)} — играю с начала`, 'ok', 3200)
+            toast(`Загружено: ${fmt(buffer.duration, false)} — играю с начала`, 'ok', 3200);
             // свежий трек сразу звучит: выбор файла — это и есть действие пользователя
             playContext = { kind: 'mix' };
-            playRange(0, buffer.duration, soundOptions());;
+            playRange(0, buffer.duration, soundOptions());
         } catch (error) {
             console.error(error);
             hideToast();
@@ -5800,7 +5654,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     initCardLayout();
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
-    el.stemsZipBtn.addEventListener('click', exportAllStems);
     el.stemsPlayBtn.addEventListener('click', previewMix);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
     el.selClear.addEventListener('click', () => {
@@ -6004,6 +5857,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.libSort.addEventListener('change', () => {
         app.libSort = el.libSort.value;
         renderLibrary();
+        // длина известна только у расшифрованных — для сортировки подтянем остальные в фоне
+        if (app.libSort === 'duration') ensureAllLibBuffers();
     });
 
     el.libSortDir.addEventListener('click', () => {
@@ -6169,13 +6024,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         // для проверок: тот же граф дорожек во временном контексте
         stemGraph: buildStemGraph,
         get buffer() { return app.buffer; },
-        zip: makeZip,
         get playerNodes() { return player.nodes; },
-        voice(id, settings) {
+        async voice(id, settings) {
             const sample = app.samples.find((item) => item.id === Number(id));
             if (!sample) return null;
             const started = performance.now();
-            const buffer = processVoiceBuffer(sample, settings);
+            const buffer = await processVoiceBuffer(sample, settings);
             const data = buffer.getChannelData(0);
             let peak = 0;
             let sum = 0;
@@ -6208,11 +6062,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             found.sort((a, b) => a - b);
             return Number(found[Math.floor(found.length / 2)].toFixed(2));
         },
-        voiceApply(id, settings) {
+        async voiceApply(id, settings) {
             const sample = app.samples.find((item) => item.id === Number(id));
             if (!sample) return null;
             const started = performance.now();
-            const processed = processVoiceBuffer(sample, settings);
+            const processed = await processVoiceBuffer(sample, settings);
             sample.buffer = processed;
             renderSamples();
             draw();
