@@ -1567,10 +1567,28 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return { input, out, vocal, instrumental, bass, highs, meters };
     }
 
+    let resumeArmed = false;
+
     async function ensureRunning() {
         const ctx = getContext();
         if (ctx.state === 'suspended') {
             try { await ctx.resume(); } catch (error) { console.warn('resume не удался', error); }
+            // Chrome теряет «жест игрока», пока пользователь выбирает файл в диалоге,
+            // и звук после загрузки не стартует. Трек уже запущен: первый клик или
+            // клавиша в любом месте страницы включает контекст — и звук сразу идёт
+            if (ctx.state === 'suspended' && !resumeArmed) {
+                resumeArmed = true;
+                const unlock = () => {
+                    ctx.resume().then(() => {
+                        resumeArmed = false;
+                        window.removeEventListener('pointerdown', unlock);
+                        window.removeEventListener('keydown', unlock);
+                    }).catch(() => { /* попробуем на следующем клике */ });
+                };
+                window.addEventListener('pointerdown', unlock);
+                window.addEventListener('keydown', unlock);
+                toast('Звук включится после первого клика — браузер блокирует автозапуск', 'info', 5000);
+            }
         }
         if (!player.nodes) {
             const pre = ctx.createGain();
