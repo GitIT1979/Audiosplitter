@@ -635,6 +635,7 @@
                     <button type="button" class="icon-btn" id="stopBtn" aria-label="Стоп" title="Стоп">■</button>
                     <button type="button" class="icon-btn" id="undoBtn" aria-label="Отменить" title="Отменять нечего" disabled>↶</button>
                     <button type="button" class="icon-btn" id="loopBtn" aria-label="Повтор" aria-pressed="false" title="Повторять фрагмент">🔁</button>
+                    <button type="button" class="icon-btn" id="trackMuteBtn" aria-label="Заглушить основной трек" aria-pressed="false" title="Заглушить основной трек — таймлайн идёт, дорожки-сэмплы продолжают играть; сведение запишет именно это">🔈</button>
                     <button type="button" class="icon-btn" id="recordBtn" aria-label="Записать с микрофона" title="Записать с микрофона">🎤</button>
 
                     <div class="time">
@@ -1360,7 +1361,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         fileInput: $('fileInput'), openBtn: $('openBtn'), waveEmpty: $('waveEmpty'), waveOpenBtn: $('waveOpenBtn'),
         buildChip: $('buildChip'), diag: $('diag'), diagBody: $('diagBody'), diagClose: $('diagClose'), diagCopy: $('diagCopy'),
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
-        playBtn: $('playBtn'), stopBtn: $('stopBtn'), loopBtn: $('loopBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
+        playBtn: $('playBtn'), stopBtn: $('stopBtn'), loopBtn: $('loopBtn'), trackMuteBtn: $('trackMuteBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
         timeNow: $('timeNow'), timeTotal: $('timeTotal'), volume: $('volume'),
         zoomIn: $('zoomIn'), zoomOut: $('zoomOut'), zoomLabel: $('zoomLabel'), fitBtn: $('fitBtn'),
         waveWrap: $('waveWrap'), wave: $('wave'), waveHint: $('waveHint'),
@@ -1434,6 +1435,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         gainDb: 0,
         lowDb: 0,
         highDb: 0,
+        trackMuted: false,
     };
 
     const player = {
@@ -1618,7 +1620,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             // звук всегда идёт через граф дорожек: сумма веток при 100 % равна исходнику,
             // а любой ползунок действует мгновенно — без переключения путей
             const stems = buildStemGraph(ctx, pre);
-            player.nodes = { pre, low, high, master, stems };
+            // мьют основного трека: глушит только его, дорожки-сэмплы идут в мастер мимо
+            const trackMute = ctx.createGain();
+            trackMute.connect(stems.input);
+            player.nodes = { pre, low, high, master, stems, trackMute };
             player.gain = master;
         }
         applyLiveParams();
@@ -1655,6 +1660,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     function sameStemGains(a, b) {
         return STEMS.every((stem) => Math.abs((a[stem.id] ?? 1) - (b[stem.id] ?? 1)) < 1e-3);
+    }
+
+    // Мьют основного трека: действует мгновенно, сэмплы в мастер не затрагивает
+    function applyTrackMute() {
+        const nodes = player.nodes;
+        if (nodes && nodes.trackMute && player.ctx) {
+            nodes.trackMute.gain.setTargetAtTime(app.trackMuted ? 0 : 1, player.ctx.currentTime, 0.012);
+        }
     }
 
     // Скорость — это playbackRate источника, тоже без рендера
@@ -1866,11 +1879,15 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const srcR = source.numberOfChannels > 1 ? source.getChannelData(1) : srcL;
         const gains = opts.stems || null;
 
-        if (!gains || !stemsNeeded(gains)) {
-            left.set(srcL.subarray(s0, s1));
-            right.set(srcR.subarray(s0, s1));
-        } else {
-            mixStemsInto(left, right, srcL, srcR, s0, frames, gains, rate);
+        // основной трек можно выключить из микса (🔇 в транспорте): каналы остаются
+        // нулями, а сэмплы ниже смешиваются как обычно — сведение пишет услышанное
+        if (!opts.muteTrack) {
+            if (!gains || !stemsNeeded(gains)) {
+                left.set(srcL.subarray(s0, s1));
+                right.set(srcR.subarray(s0, s1));
+            } else {
+                mixStemsInto(left, right, srcL, srcR, s0, frames, gains, rate);
+            }
         }
 
         // то же ограничение по пику, что и в живом прослушивании: «слышу» = «сохранил»
@@ -2472,7 +2489,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         source.buffer = player.buffer;
         const nodes = player.nodes;
         // граф дорожек включён всегда: ползунки действуют мгновенно, переключать пути не нужно
-        const target = nodes ? nodes.stems.input : player.gain;
+        const target = nodes ? nodes.trackMute : player.gain;
         source.connect(target);
         source.playbackRate.value = app.speed || 1;
         player.speed = app.speed || 1;
@@ -3271,6 +3288,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     function updateTransportUi() {
         el.playBtn.textContent = player.playing ? '⏸' : '▶';
         el.playBtn.setAttribute('aria-label', player.playing ? 'Пауза' : 'Воспроизвести');
+        if (el.trackMuteBtn) {
+            el.trackMuteBtn.classList.toggle('is-on', app.trackMuted);
+            el.trackMuteBtn.textContent = app.trackMuted ? '🔇' : '🔈';
+            el.trackMuteBtn.setAttribute('aria-pressed', String(app.trackMuted));
+        }
         if (el.mixPreviewBtn) el.mixPreviewBtn.textContent = player.playing ? '■ Стоп' : '▶ Прослушать';
         if (el.stemsPlayBtn) {
             el.stemsPlayBtn.textContent = player.playing ? '■' : '▶';
@@ -3348,6 +3370,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 lowDb: app.lowDb,
                 highDb: app.highDb,
                 speed: app.speed,
+                trackMuted: app.trackMuted,
             },
         });
         while (history.length > HISTORY_LIMIT) history.shift();
@@ -3381,6 +3404,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             app.lowDb = state.settings.lowDb;
             app.highDb = state.settings.highDb;
             app.speed = state.settings.speed;
+            app.trackMuted = !!state.settings.trackMuted;
+            applyTrackMute();
             el.gainDb.value = String(app.gainDb);
             el.lowDb.value = String(app.lowDb);
             el.highDb.value = String(app.highDb);
@@ -4213,6 +4238,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return {
             stems: { ...app.stemGains },
             gainDb: app.gainDb + (clip.gain || 0),
+            muteTrack: app.trackMuted,
             lowDb: app.lowDb,
             highDb: app.highDb,
             fadeIn: clip.fade || 0,
@@ -5273,11 +5299,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         app.lowDb = 0;
         app.highDb = 0;
         app.speed = 1;
+        app.trackMuted = false;
+        applyTrackMute();
         el.gainDb.value = '0';
         el.lowDb.value = '0';
         el.highDb.value = '0';
         el.speed.value = '1';
         updateSoundLabels();
+        updateTransportUi();
     }
 
     // Общий хвост после замены трека: волна и панели догоняют новое состояние
@@ -5685,6 +5714,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return {
             stems: { ...app.stemGains },
             gainDb: app.gainDb,
+            muteTrack: app.trackMuted,
             lowDb: app.lowDb,
             highDb: app.highDb,
             speed: app.speed,
@@ -5698,7 +5728,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (el.waveEmpty) el.waveEmpty.hidden = has;
         if (el.waveHint) el.waveHint.hidden = !has || !!app.selection;
         document.body.classList.toggle('has-track', has);
-        [el.playBtn, el.stopBtn, el.recordBtn, el.zoomIn, el.zoomOut, el.fitBtn, el.selectAllBtn].forEach((btn) => {
+        [el.playBtn, el.stopBtn, el.recordBtn, el.zoomIn, el.zoomOut, el.fitBtn, el.selectAllBtn, el.trackMuteBtn].forEach((btn) => {
             if (btn) btn.disabled = !has;
         });
     }
@@ -5764,6 +5794,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     el.loopBtn.addEventListener('click', () => {
         app.loop = !app.loop;
+        updateTransportUi();
+    });
+
+    // Комбинированное прослушивание: основной трек глушится, таймлайн идёт,
+    // дорожки-сэмплы продолжают звучать (у каждой своя 🔇) — и это же сводится в файл
+    el.trackMuteBtn.addEventListener('click', () => {
+        app.trackMuted = !app.trackMuted;
+        applyTrackMute();
         updateTransportUi();
     });
 
