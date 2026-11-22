@@ -643,6 +643,8 @@
                     <button type="button" class="play-btn" id="playBtn" aria-label="Воспроизвести">▶</button>
                     <button type="button" class="icon-btn" id="stopBtn" aria-label="Стоп" title="Стоп">■</button>
                     <button type="button" class="icon-btn" id="undoBtn" aria-label="Отменить" title="Отменять нечего" disabled>↶</button>
+                    <button type="button" class="icon-btn" id="rewBtn" aria-label="Назад 10 секунд" title="Назад 10 с (клавиша ←)">⏪</button>
+                    <button type="button" class="icon-btn" id="fwdBtn" aria-label="Вперёд 10 секунд" title="Вперёд 10 с (клавиша →)">⏩</button>
                     <button type="button" class="icon-btn" id="loopBtn" aria-label="Повтор" aria-pressed="false" title="Повторять фрагмент">🔁</button>
                     <button type="button" class="icon-btn" id="trackMuteBtn" aria-label="Заглушить основной трек" aria-pressed="false" title="Заглушить основной трек — таймлайн идёт, дорожки-сэмплы продолжают играть; сведение запишет именно это">🔈</button>
                     <button type="button" class="icon-btn" id="recordBtn" aria-label="Записать с микрофона" title="Записать с микрофона">🎤</button>
@@ -852,7 +854,7 @@
                         <div class="sound">
                             <label class="slider-row">
                                 <span>Громкость</span>
-                                <input type="range" id="gainDb" min="-12" max="12" step="0.5" value="0" aria-label="Громкость в децибелах">
+                                <input type="range" id="gainDb" min="-24" max="24" step="0.5" value="0" aria-label="Громкость в децибелах">
                                 <span class="val" id="gainVal">0 дБ</span>
                             </label>
                             <label class="slider-row">
@@ -1370,7 +1372,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         fileInput: $('fileInput'), openBtn: $('openBtn'), waveEmpty: $('waveEmpty'),
         buildChip: $('buildChip'), diag: $('diag'), diagBody: $('diagBody'), diagClose: $('diagClose'), diagCopy: $('diagCopy'),
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
-        playBtn: $('playBtn'), stopBtn: $('stopBtn'), loopBtn: $('loopBtn'), trackMuteBtn: $('trackMuteBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
+        playBtn: $('playBtn'), stopBtn: $('stopBtn'), rewBtn: $('rewBtn'), fwdBtn: $('fwdBtn'),
+        loopBtn: $('loopBtn'), trackMuteBtn: $('trackMuteBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
         timeNow: $('timeNow'), timeTotal: $('timeTotal'), volume: $('volume'),
         zoomIn: $('zoomIn'), zoomOut: $('zoomOut'), zoomLabel: $('zoomLabel'), fitBtn: $('fitBtn'),
         waveWrap: $('waveWrap'), wave: $('wave'), waveHint: $('waveHint'),
@@ -1521,11 +1524,14 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             bassR: [makeFilter('lowpass', 140, rate), makeFilter('lowpass', 140, rate)],
             highL: [makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate)],
             highR: [makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate)],
+            vocalHp: [makeFilter('highpass', 150, rate), makeFilter('highpass', 150, rate)],
+            vocalLp: [makeFilter('lowpass', 8000, rate), makeFilter('lowpass', 8000, rate)],
         };
         const bL = new Float32Array(4096);
         const bR = new Float32Array(4096);
         const hL = new Float32Array(4096);
         const hR = new Float32Array(4096);
+        const vB = new Float32Array(4096);
         node.onaudioprocess = (event) => {
             const inBuf = event.inputBuffer;
             const L = inBuf.getChannelData(0);
@@ -1540,18 +1546,21 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             bR.set(R.subarray(0, frames));
             hL.set(bL.subarray(0, frames));
             hR.set(bR.subarray(0, frames));
+            for (let i = 0; i < frames; i++) vB[i] = (L[i] + R[i]) * 0.5;
             filters.bassL.forEach((f) => f.process(view(bL)));
             filters.bassR.forEach((f) => f.process(view(bR)));
             filters.highL.forEach((f) => f.process(view(hL)));
             filters.highR.forEach((f) => f.process(view(hR)));
+            filters.vocalHp.forEach((f) => f.process(view(vB)));
+            filters.vocalLp.forEach((f) => f.process(view(vB)));
 
             let sumV = 0, sumI = 0, sumB = 0, sumH = 0;
             for (let i = 0; i < frames; i++) {
                 const baseL = L[i];
                 const baseR = R[i];
-                // вокал — центр (L+R)/2; инструментал = исходник минус три полосы;
+                // вокал — центр в полосе; инструментал = исходник минус три полосы;
                 // при 100 % сумма веток восстанавливает исходник — та же арифметика, что в экспорте
-                const mid = (baseL + baseR) * 0.5;
+                const mid = vB[i];
                 const instL = baseL - bL[i] - mid - hL[i];
                 const instR = baseR - bR[i] - mid - hR[i];
                 const v = mid * gV;
@@ -1807,9 +1816,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             bassR: [makeFilter('lowpass', 140, rate), makeFilter('lowpass', 140, rate)],
             highL: [makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate)],
             highR: [makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate)],
-            // вокал — чистый центр без фильтров: иначе вычитание не срезает голос
-            vocalHp: [],
-            vocalLp: [],
+            // вокал — центр в полосе 150 Гц – 8 кГц: центральный бас остаётся в «Басе»,
+            // тарелки — в «Верхе», поэтому дорожка звучит как голос, а не весь трек
+            vocalHp: [makeFilter('highpass', 150, rate), makeFilter('highpass', 150, rate)],
+            vocalLp: [makeFilter('lowpass', 8000, rate), makeFilter('lowpass', 8000, rate)],
         };
 
         for (let pos = 0; pos < frames; pos += BLOCK) {
@@ -3109,12 +3119,15 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             app.playhead = xToTime(clamp(point.x, 0, cssW));
             updateSelectionUi();
             updateTimeUi();
-            draw();
+            // клик по волне во время игры — настоящая перемотка, звук продолжается с нового места
+            if (player.playing) playRange(app.playhead, app.buffer.duration, optionsForContext());
+            else draw();
         } else if (finished.mode === 'ruler' && !finished.moved) {
             const point = localPoint(event);
             app.playhead = xToTime(clamp(point.x, 0, cssW));
             updateTimeUi();
-            draw();
+            if (player.playing) playRange(app.playhead, app.buffer.duration, optionsForContext());
+            else draw();
         } else if (finished.mode === 'trim') {
             updateSelectionUi();
             draw();
@@ -5744,7 +5757,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (el.waveEmpty) el.waveEmpty.hidden = has;
         if (el.waveHint) el.waveHint.hidden = !has || !!app.selection;
         document.body.classList.toggle('has-track', has);
-        [el.playBtn, el.stopBtn, el.recordBtn, el.zoomIn, el.zoomOut, el.fitBtn, el.selectAllBtn, el.trackMuteBtn].forEach((btn) => {
+        [el.playBtn, el.stopBtn, el.rewBtn, el.fwdBtn, el.recordBtn, el.zoomIn, el.zoomOut, el.fitBtn, el.selectAllBtn, el.trackMuteBtn].forEach((btn) => {
             if (btn) btn.disabled = !has;
         });
     }
@@ -5810,6 +5823,17 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     });
 
     el.undoBtn.addEventListener('click', undo);
+
+    // Перемотка: кнопки ⏪/⏩ на 10 с; при игре звук бесшовно продолжается с нового места
+    const seekBy = (delta) => {
+        if (!app.buffer) return;
+        const next = clamp(app.playhead + delta, 0, app.buffer.duration);
+        app.playhead = next;
+        if (player.playing) playRange(next, app.buffer.duration, optionsForContext());
+        else { updateTimeUi(); draw(); }
+    };
+    el.rewBtn.addEventListener('click', () => seekBy(-10));
+    el.fwdBtn.addEventListener('click', () => seekBy(10));
 
     el.loopBtn.addEventListener('click', () => {
         app.loop = !app.loop;
