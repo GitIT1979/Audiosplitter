@@ -621,6 +621,7 @@
             <div class="diag-head">
                 <strong>Проверка приложения</strong>
                 <div class="spacer"></div>
+                <button type="button" class="btn btn-ghost small" id="diagCopy" title="Скопировать все строки панели в буфер обмена">⧉ Копировать отчёт</button>
                 <button type="button" class="icon-btn" id="diagClose" aria-label="Закрыть">✕</button>
             </div>
             <div class="diag-body" id="diagBody"></div>
@@ -1343,11 +1344,21 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
     const isLittleEndian = () => new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 
+    // Журнал ошибок: попадает в отчёт самопроверки — отладка без консоли браузера
+    const errorLog = [];
+    function logError(kind, message) {
+        const text = `${kind}: ${String(message).slice(0, 200)}`;
+        if (errorLog[errorLog.length - 1] !== text) errorLog.push(text);
+        if (errorLog.length > 20) errorLog.shift();
+    }
+    window.addEventListener('error', (event) => logError('ошибка', event.message));
+    window.addEventListener('unhandledrejection', (event) => logError('promise', (event.reason && event.reason.message) || event.reason));
+
     /* ------------------------------------------------------------ элементы */
 
     const el = {
         fileInput: $('fileInput'), openBtn: $('openBtn'), waveEmpty: $('waveEmpty'), waveOpenBtn: $('waveOpenBtn'),
-        buildChip: $('buildChip'), diag: $('diag'), diagBody: $('diagBody'), diagClose: $('diagClose'),
+        buildChip: $('buildChip'), diag: $('diag'), diagBody: $('diagBody'), diagClose: $('diagClose'), diagCopy: $('diagCopy'),
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
         playBtn: $('playBtn'), stopBtn: $('stopBtn'), loopBtn: $('loopBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
         timeNow: $('timeNow'), timeTotal: $('timeTotal'), volume: $('volume'),
@@ -3459,12 +3470,61 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return count;
     }
 
+    // Баланс каналов вживую: видно, уводит ли звук в одну колонку — не «по ощущениям»
+    let diagBalance = null;
+
+    function balanceText() {
+        const nodes = player.nodes;
+        if (!nodes || !player.ctx) return null;
+        if (!diagBalance) {
+            const ctx = player.ctx;
+            const split = ctx.createChannelSplitter(2);
+            const left = ctx.createAnalyser();
+            const right = ctx.createAnalyser();
+            left.fftSize = 1024;
+            right.fftSize = 1024;
+            nodes.master.connect(split);
+            split.connect(left, 0);
+            split.connect(right, 1);
+            diagBalance = { split, left, right };
+        }
+        const read = (a) => {
+            const d = new Float32Array(a.fftSize);
+            a.getFloatTimeDomainData(d);
+            let s = 0;
+            for (let i = 0; i < d.length; i++) s += d[i] * d[i];
+            return Math.sqrt(s / d.length);
+        };
+        return `L ${Math.round(read(diagBalance.left) * 100)}% · R ${Math.round(read(diagBalance.right) * 100)}%`;
+    }
+
+    let diagTimer = 0;
+
+    function startDiagLive() {
+        if (diagTimer) return;
+        diagTimer = setInterval(() => {
+            if (!el.diag || el.diag.hidden || !el.diagBody) return;
+            const row = el.diagBody.querySelector('[data-key="balance"]');
+            if (!row) return;
+            const text = balanceText();
+            row.querySelector('.val').textContent = `Баланс каналов: ${text || 'появится после первого ▶'}`;
+        }, 400);
+    }
+
     function collectDiagnostics() {
         const rows = [];
         const add = (ok, label, value, info) => rows.push({ ok: ok ? 'ok' : (info ? 'info' : 'bad'), label, value });
         const ctx = player.ctx;
+        const ua = navigator.userAgent;
+        const browserName = /Edg\//.test(ua) ? 'Microsoft Edge'
+            : /OPR\//.test(ua) ? 'Opera'
+                : /Firefox\//.test(ua) ? `Firefox ${(ua.match(/Firefox\/(\d+)/) || [])[1] || ''}`.trim()
+                    : /Chrome\//.test(ua) ? `Chrome ${(ua.match(/Chrome\/(\d+)/) || [])[1] || ''}`.trim()
+                        : /Safari\//.test(ua) ? 'Safari'
+                            : 'другой';
 
         add(true, 'Сборка', buildStamp());
+        add(true, 'Браузер', browserName);
         const isFile = location.protocol === 'file:';
         add(!isFile, 'Адрес',
             `${location.protocol}//${location.host || '(файл)'}${location.pathname}${isFile ? ' — без папки библиотеки и микрофона' : ''}`,
@@ -3505,6 +3565,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
 
         add(true, 'Воспроизведение', player.playing ? `идёт, ${fmt(currentPosition(), false)}` : 'остановлено');
+        const balance = balanceText();
+        add(!!balance, 'Баланс каналов', balance || 'появится после первого ▶', !balance);
+        add(errorLog.length === 0, 'Ошибки', errorLog.length ? errorLog.slice(-3).join(' | ') : 'нет');
 
         const overlaps = countOverlaps();
         add(overlaps === 0, 'Раскладка', overlaps ? `${overlaps} наложений карточек` : `без наложений, ${effCols()} колонки`);
@@ -3519,6 +3582,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         rows.forEach((row) => {
             const line = document.createElement('div');
             line.className = 'diag-row';
+            if (row.label === 'Баланс каналов') line.dataset.key = 'balance';
             const mark = document.createElement('b');
             mark.className = row.ok;
             mark.textContent = row.ok === 'ok' ? '✓' : row.ok === 'info' ? '•' : '✕';
@@ -3529,6 +3593,24 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             el.diagBody.appendChild(line);
         });
         el.diag.hidden = false;
+        startDiagLive();
+    }
+
+    // Запасной путь копирования для браузеров без navigator.clipboard
+    function copyReportFallback(text, done) {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        try {
+            document.execCommand('copy');
+            done();
+        } catch (error) {
+            toast('Не удалось скопировать — выделите строки панели вручную', 'warn', 4000);
+        }
+        area.remove();
     }
 
     function initDiagnostics() {
@@ -3540,6 +3622,16 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             });
         }
         if (el.diagClose) el.diagClose.addEventListener('click', () => { el.diag.hidden = true; });
+        if (el.diagCopy) el.diagCopy.addEventListener('click', () => {
+            const lines = [...el.diagBody.querySelectorAll('.diag-row')].map((row) => row.textContent);
+            const report = ['AudioSplitter — отчёт самопроверки', ...lines].join('\n');
+            const done = () => toast('Отчёт скопирован — вставьте его в чат', 'ok', 3200);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(report).then(done, () => copyReportFallback(report, done));
+            } else {
+                copyReportFallback(report, done);
+            }
+        });
         // панель висит поверх страницы — закрываем кликом мимо, чтобы не перекрывать кнопки
         document.addEventListener('pointerdown', (event) => {
             if (!el.diag || el.diag.hidden) return;
