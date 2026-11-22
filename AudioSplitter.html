@@ -680,9 +680,8 @@
                     <div class="wave-hint" id="waveHint">Потяните по волне, чтобы выделить фрагмент · Ctrl + колесо — масштаб</div>
                     <div class="wave-empty" id="waveEmpty">
                         <div class="wave-empty-icon">🎧</div>
-                        <div class="wave-empty-title">Перетащите трек в окно или откройте файл</div>
-                        <div class="wave-empty-hint">MP3 · WAV · OGG/Opus · FLAC · M4A/AAC · AIFF — всё, что умеет декодировать браузер</div>
-                        <button type="button" class="btn btn-primary" id="waveOpenBtn">Открыть файл</button>
+                        <div class="wave-empty-title">Перетащите трек в окно</div>
+                        <div class="wave-empty-hint">или нажмите «Открыть файл» в шапке · MP3 · WAV · OGG/Opus · FLAC · M4A/AAC</div>
                     </div>
                 </div>
                 <div class="selbar" id="selBar" hidden>
@@ -769,6 +768,7 @@
                         <h2>Дорожки</h2>
                             <div class="spacer"></div>
                             <button type="button" class="icon-btn" id="stemsPlayBtn" title="Послушать микс с текущими уровнями — без сохранения файла" aria-label="Прослушать дорожки">▶</button>
+                            <button type="button" class="btn btn-ghost small" id="stemsAllBtn" title="Скачать все четыре дорожки отдельными файлами">⤓ все</button>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
                         <div class="stems" id="stems"></div>
@@ -1358,7 +1358,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     /* ------------------------------------------------------------ элементы */
 
     const el = {
-        fileInput: $('fileInput'), openBtn: $('openBtn'), waveEmpty: $('waveEmpty'), waveOpenBtn: $('waveOpenBtn'),
+        fileInput: $('fileInput'), openBtn: $('openBtn'), waveEmpty: $('waveEmpty'),
         buildChip: $('buildChip'), diag: $('diag'), diagBody: $('diagBody'), diagClose: $('diagClose'), diagCopy: $('diagCopy'),
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
         playBtn: $('playBtn'), stopBtn: $('stopBtn'), loopBtn: $('loopBtn'), trackMuteBtn: $('trackMuteBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
@@ -1371,7 +1371,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
-        stemsResetBtn: $('stemsResetBtn'), stemsPlayBtn: $('stemsPlayBtn'),
+        stemsResetBtn: $('stemsResetBtn'), stemsAllBtn: $('stemsAllBtn'), stemsPlayBtn: $('stemsPlayBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
@@ -5261,6 +5261,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.bounceBtn.disabled = !ready;
         el.perfBtn.disabled = !ready;
         el.freshBtn.disabled = !ready || !app.originalBuffer;
+        if (el.stemsAllBtn) el.stemsAllBtn.disabled = !ready;
     }
 
     // «Прослушать» — переключатель: второе нажатие убирает звук
@@ -5598,6 +5599,31 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         }
     }
 
+    // Все дорожки подряд отдельными файлами: одна кнопка вместо четырёх
+    async function exportAllStems() {
+        if (!app.buffer) return;
+        if (app.busy) { toast('Дождитесь окончания текущей операции', 'warn', 2600); return; }
+        const range = exportRange();
+        const base = safeFile(app.fileName);
+        app.busy = true;
+        updateMixUi();
+        try {
+            for (let i = 0; i < STEMS.length; i++) {
+                const stem = STEMS[i];
+                toast(`Дорожка ${i + 1} из ${STEMS.length}: ${stem.name.toLowerCase()}`, 'info', 0);
+                await tick();
+                await exportAudio(range.start, range.end, stemOptions(stem.id), `${base}_${stem.id}`);
+            }
+            toast(`Готово: скачано дорожек — ${STEMS.length} (папка загрузок браузера)`, 'ok', 4200);
+        } catch (error) {
+            console.error(error);
+            toast(`Не удалось сохранить дорожки: ${error.message}`, 'error', 6000);
+        } finally {
+            app.busy = false;
+            updateMixUi();
+        }
+    }
+
     /* ------------------------------------------------------------- загрузка */
 
     function resetSession() {
@@ -5723,11 +5749,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.fileInput.click();
     };
 
-    el.waveOpenBtn.addEventListener('click', openFilePicker);
-    el.waveEmpty.addEventListener('click', (event) => {
-        if (event.target.closest('button')) return;
-        openFilePicker();
-    });
+    el.waveEmpty.addEventListener('click', () => openFilePicker());
     el.fileInput.addEventListener('change', (event) => {
         const file = event.target.files && event.target.files[0];
         if (file) loadFile(file);
@@ -5830,6 +5852,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     initCardLayout();
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
+    el.stemsAllBtn.addEventListener('click', exportAllStems);
     el.stemsPlayBtn.addEventListener('click', previewMix);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
     el.selClear.addEventListener('click', () => {
