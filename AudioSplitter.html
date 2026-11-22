@@ -168,15 +168,24 @@
         .wave-empty {
             position: absolute; inset: 0;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 8px; padding: 16px; text-align: center;
+            gap: 10px; padding: 16px; text-align: center;
             background: rgba(7, 11, 22, 0.55);
             border: 1px dashed var(--line); border-radius: 12px;
             transition: border-color 0.2s, background 0.2s;
+            cursor: pointer;
         }
+        .wave-empty:hover { border-color: var(--accent); background: rgba(168, 85, 247, 0.10); }
+        .wave-empty:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
         .wave-empty[hidden] { display: none; }
         body.is-dropping .wave-empty { border-color: var(--accent); background: rgba(168, 85, 247, 0.14); }
         .wave-empty-icon { font-size: 1.5rem; line-height: 1; }
-        .wave-empty-title { font-size: 0.92rem; font-weight: 600; }
+        .wave-empty-title {
+            font-size: 0.95rem; font-weight: 600; color: #fff;
+            padding: 10px 20px; border-radius: 999px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(236, 72, 153, 0.9));
+            box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+        }
+        .wave-empty:hover .wave-empty-title { filter: brightness(1.12); }
         .wave-empty-hint { font-size: 0.72rem; color: var(--dim); max-width: 460px; }
         @media (max-height: 700px) { .wave-empty-icon { display: none; } }
 
@@ -678,10 +687,10 @@
                 <div class="wave-wrap" id="waveWrap">
                     <canvas id="wave" role="img" aria-label="Волна трека: тяните мышью, чтобы выделить фрагмент"></canvas>
                     <div class="wave-hint" id="waveHint">Потяните по волне, чтобы выделить фрагмент · Ctrl + колесо — масштаб</div>
-                    <div class="wave-empty" id="waveEmpty">
+                    <div class="wave-empty" id="waveEmpty" role="button" tabindex="0" aria-label="Загрузить или перетащить аудиофайл">
                         <div class="wave-empty-icon">🎧</div>
-                        <div class="wave-empty-title">Перетащите трек в окно</div>
-                        <div class="wave-empty-hint">или нажмите «Открыть файл» в шапке · MP3 · WAV · OGG/Opus · FLAC · M4A/AAC</div>
+                        <div class="wave-empty-title">Загрузите или перетащите с диска файл</div>
+                        <div class="wave-empty-hint">клик здесь — выбор файла · перетащите в любое место окна · MP3 · WAV · OGG/Opus · FLAC · M4A/AAC</div>
                     </div>
                 </div>
                 <div class="selbar" id="selBar" hidden>
@@ -5750,6 +5759,13 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     };
 
     el.waveEmpty.addEventListener('click', () => openFilePicker());
+    // вся зона — кнопка: с клавиатуры Enter/Пробел тоже открывают выбор файла
+    el.waveEmpty.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openFilePicker();
+        }
+    });
     el.fileInput.addEventListener('change', (event) => {
         const file = event.target.files && event.target.files[0];
         if (file) loadFile(file);
