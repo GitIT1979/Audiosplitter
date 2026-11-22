@@ -914,12 +914,12 @@
                         <input type="file" id="libDirInput" webkitdirectory directory multiple hidden>
                     <div class="card-sep"></div>
                         <div class="card-head">
-                            <h2>Звуки на треке</h2>
+                            <h2>Дорожки поверх трека</h2>
                             <div class="spacer"></div>
-                            <button type="button" class="btn btn-ghost small" id="addSampleBtn" title="Добавить внешний звук из файла">＋ Добавить</button>
+                            <button type="button" class="btn btn-ghost small" id="addSampleBtn" title="Добавить внешнюю дорожку из файла">＋ Добавить</button>
                         </div>
                         <div class="samples" id="samples"></div>
-                        <p class="note">Сэмпл звучит с указанной секунды и подмешивается в прослушивание и экспорт. На волне его можно тянуть за плашку с названием.</p>
+                        <p class="note">Каждая дорожка звучит с указанной секунды и подмешивается в прослушивание, сведение и запись. На волне её можно тянуть за плашку с названием.</p>
                         <p class="note note-warn" id="micHint" hidden></p>
                         <input type="file" id="sampleInput" accept="audio/*" multiple hidden>
                     </section>
@@ -1436,6 +1436,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         lowDb: 0,
         highDb: 0,
         trackMuted: false,
+        soloSampleId: null,
     };
 
     const player = {
@@ -1668,6 +1669,13 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (nodes && nodes.trackMute && player.ctx) {
             nodes.trackMute.gain.setTargetAtTime(app.trackMuted ? 0 : 1, player.ctx.currentTime, 0.012);
         }
+    }
+
+    // Фактическая громкость дорожки: мьют глушит её, соло глушит все остальные
+    function effectiveSampleGain(sample) {
+        if (sample.muted) return 0;
+        if (app.soloSampleId && app.soloSampleId !== sample.id) return 0;
+        return sample.gain;
     }
 
     // Скорость — это playbackRate источника, тоже без рендера
@@ -1955,7 +1963,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const srcOffset = (from - sampleStart) * buffer.sampleRate;
         const dataL = buffer.getChannelData(0);
         const dataR = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : dataL;
-        const gain = sample.muted ? 0 : sample.gain;
+        const gain = effectiveSampleGain(sample);
 
         for (let i = 0; i < count; i++) {
             const pos = srcOffset + i * ratio;
@@ -2539,7 +2547,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             voice.buffer = sample.buffer;
             voice.playbackRate.value = speed;
             const gain = ctx.createGain();
-            gain.gain.value = sample.muted ? 0 : sample.gain;
+            gain.gain.value = effectiveSampleGain(sample);
             voice.connect(gain);
             gain.connect(nodes.master);
             const startAt = sample.start > from ? now + (sample.start - from) / speed : now;
@@ -2567,7 +2575,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const when = player.ctx ? player.ctx.currentTime : 0;
         (player.sampleVoices || []).forEach((entry) => {
             const sample = app.samples.find((item) => item.id === entry.id);
-            const value = !sample || sample.muted ? 0 : sample.gain;
+            const value = sample ? effectiveSampleGain(sample) : 0;
             try { entry.gainNode.gain.setTargetAtTime(value, when, 0.012); } catch (error) { /* голос ушёл */ }
         });
     }
@@ -4385,7 +4393,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     function renderSamples() {
         renderVoiceTargets();
         if (!app.samples.length) {
-            el.samples.innerHTML = '<p class="empty">Сэмплов нет. Добавьте звук или запишите дорожку — она ляжет поверх трека.</p>';
+            el.samples.innerHTML = '<p class="empty">Дорожек нет. Добавьте файл или запишите с микрофона — дорожка ляжет поверх трека.</p>';
             return;
         }
         const fragment = document.createDocumentFragment();
@@ -4397,7 +4405,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 <div class="sample-name"></div>
                 <input type="number" data-field="start" step="0.1" min="0" aria-label="Позиция сэмпла">
                 <input type="range" min="0" max="150" step="1" value="${Math.round(sample.gain * 100)}" aria-label="Громкость сэмпла">
-                <button type="button" class="icon-btn" data-act="play" title="Прослушать сэмпл" aria-label="Прослушать сэмпл">▶</button>
+                <button type="button" class="icon-btn" data-act="play" title="Прослушать дорожку отдельно" aria-label="Прослушать дорожку">▶</button>
+                <button type="button" class="icon-btn${app.soloSampleId === sample.id ? ' is-on' : ''}" data-act="solo" title="${app.soloSampleId === sample.id ? 'Выключить соло — вернуть все дорожки' : 'Соло: слышна только эта дорожка'}" aria-label="${app.soloSampleId === sample.id ? 'Выключить соло' : 'Соло дорожки'}">🎧</button>
                 <button type="button" class="icon-btn" data-act="mute" title="${sample.muted ? 'Вернуть дорожку в микс' : 'Заглушить дорожку'}" aria-label="${sample.muted ? 'Вернуть дорожку' : 'Заглушить дорожку'}">${sample.muted ? '🔇' : '🔈'}</button>
                 <button type="button" class="icon-btn" data-act="rename" title="Переименовать дорожку" aria-label="Переименовать дорожку">✎</button>
                 <button type="button" class="icon-btn" data-act="cut" title="Удалить выделенное из этой дорожки" aria-label="Удалить часть дорожки">✂</button>
@@ -5624,6 +5633,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         stopPlayback();
         app.clips = [];
         app.samples = [];
+        app.soloSampleId = null;
         app.selection = null;
         app.activeClipId = null;
         app.playhead = 0;
@@ -5958,6 +5968,12 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const sample = app.samples.find((item) => item.id === Number(row.dataset.id));
         if (!sample) return;
         if (event.target.closest('[data-act="play"]')) previewSample(sample);
+        else if (event.target.closest('[data-act="solo"]')) {
+            // соло: один клик — слышна только эта дорожка, повторный — все возвращаются
+            app.soloSampleId = app.soloSampleId === sample.id ? null : sample.id;
+            renderSamples();
+            applySampleGains();
+        }
         else if (event.target.closest('[data-act="mute"]')) {
             sample.muted = !sample.muted;
             renderSamples();
@@ -5976,6 +5992,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         else if (event.target.closest('[data-act="export"]')) exportSample(sample);
         else if (event.target.closest('[data-act="del"]')) {
             app.samples = app.samples.filter((item) => item !== sample);
+            if (app.soloSampleId === sample.id) app.soloSampleId = null;
             renderSamples();
             draw();
             scheduleLive();
