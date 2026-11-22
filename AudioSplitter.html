@@ -1483,6 +1483,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     // Сумма четырёх веток при уровнях 100 % равна исходнику: инструментал = всё минус три полосы.
     function buildStemGraph(ctx, dest) {
         const input = ctx.createGain();
+        // вход всегда стерео: у моно-файлов канал R пуст и центр выходил вдвое тише —
+        // вокал не вычитался до конца. Явный апмикс даёт полноценное вычитание центра
+        input.channelCount = 2;
+        input.channelCountMode = 'explicit';
         const out = ctx.createGain();
         out.connect(dest);
 
