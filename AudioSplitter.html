@@ -1437,7 +1437,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         playing: false,
         speed: 1,
         liveSamples: false,
-        sampleNodes: [],
+        sampleVoices: [],
         stemSolo: null,
         extraGainDb: 0,
         raf: 0,
@@ -1905,7 +1905,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const srcOffset = (from - sampleStart) * buffer.sampleRate;
         const dataL = buffer.getChannelData(0);
         const dataR = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : dataL;
-        const gain = sample.gain;
+        const gain = sample.muted ? 0 : sample.gain;
 
         for (let i = 0; i < count; i++) {
             const pos = srcOffset + i * ratio;
@@ -2489,7 +2489,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             voice.buffer = sample.buffer;
             voice.playbackRate.value = speed;
             const gain = ctx.createGain();
-            gain.gain.value = sample.gain;
+            gain.gain.value = sample.muted ? 0 : sample.gain;
             voice.connect(gain);
             gain.connect(nodes.master);
             const startAt = sample.start > from ? now + (sample.start - from) / speed : now;
@@ -2498,17 +2498,28 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             try {
                 voice.start(startAt, offset);
                 voice.stop(stopAt);
-                player.sampleNodes.push(voice);
+                player.sampleVoices.push({ id: sample.id, voice, gainNode: gain });
             } catch (error) { /* голос уже не нужен */ }
         }
     }
 
     function stopSampleVoices() {
-        (player.sampleNodes || []).forEach((voice) => {
-            try { voice.stop(); } catch (error) { /* уже остановлен */ }
-            try { voice.disconnect(); } catch (error) { /* уже отключён */ }
+        (player.sampleVoices || []).forEach((entry) => {
+            try { entry.voice.stop(); } catch (error) { /* уже остановлен */ }
+            try { entry.voice.disconnect(); } catch (error) { /* уже отключён */ }
+            try { entry.gainNode.disconnect(); } catch (error) { /* уже отключён */ }
         });
-        player.sampleNodes = [];
+        player.sampleVoices = [];
+    }
+
+    // Громкость дорожки-сэмпла меняется на ходу: играющий голос слышит её сразу, без пересборки
+    function applySampleGains() {
+        const when = player.ctx ? player.ctx.currentTime : 0;
+        (player.sampleVoices || []).forEach((entry) => {
+            const sample = app.samples.find((item) => item.id === entry.id);
+            const value = !sample || sample.muted ? 0 : sample.gain;
+            try { entry.gainNode.gain.setTargetAtTime(value, when, 0.012); } catch (error) { /* голос ушёл */ }
+        });
     }
 
     let meterTimer = 0;
@@ -4247,6 +4258,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 <input type="number" data-field="start" step="0.1" min="0" aria-label="Позиция сэмпла">
                 <input type="range" min="0" max="150" step="1" value="${Math.round(sample.gain * 100)}" aria-label="Громкость сэмпла">
                 <button type="button" class="icon-btn" data-act="play" title="Прослушать сэмпл" aria-label="Прослушать сэмпл">▶</button>
+                <button type="button" class="icon-btn" data-act="mute" title="${sample.muted ? 'Вернуть дорожку в микс' : 'Заглушить дорожку'}" aria-label="${sample.muted ? 'Вернуть дорожку' : 'Заглушить дорожку'}">${sample.muted ? '🔇' : '🔈'}</button>
+                <button type="button" class="icon-btn" data-act="rename" title="Переименовать дорожку" aria-label="Переименовать дорожку">✎</button>
                 <button type="button" class="icon-btn" data-act="cut" title="Удалить выделенное из этой дорожки" aria-label="Удалить часть дорожки">✂</button>
                 <button type="button" class="icon-btn" data-act="export" title="Сохранить дорожку в файл" aria-label="Сохранить дорожку">⤓</button>
                 <button type="button" class="icon-btn" data-act="lib" title="Сохранить в библиотеку" aria-label="Сохранить в библиотеку">⤒</button>
@@ -5369,9 +5382,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             const right = new Float32Array(frames);
             const srcL = source.getChannelData(0);
             const srcR = source.numberOfChannels > 1 ? source.getChannelData(1) : srcL;
+            const effGain = sample.muted ? 0 : sample.gain;
             for (let i = 0; i < frames; i++) {
-                left[i] = srcL[i] * sample.gain;
-                right[i] = srcR[i] * sample.gain;
+                left[i] = srcL[i] * effGain;
+                right[i] = srcR[i] * effGain;
             }
 
             const base = safeFile(sample.name) || 'track';
@@ -5792,6 +5806,19 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const sample = app.samples.find((item) => item.id === Number(row.dataset.id));
         if (!sample) return;
         if (event.target.closest('[data-act="play"]')) previewSample(sample);
+        else if (event.target.closest('[data-act="mute"]')) {
+            sample.muted = !sample.muted;
+            renderSamples();
+            applySampleGains();
+        }
+        else if (event.target.closest('[data-act="rename"]')) {
+            const name = window.prompt('Имя дорожки', sample.name);
+            if (name && name.trim()) {
+                sample.name = name.trim().slice(0, 80);
+                renderSamples();
+                draw();
+            }
+        }
         else if (event.target.closest('[data-act="cut"]')) deleteSampleSelection(sample);
         else if (event.target.closest('[data-act="lib"]')) saveSampleToLibrary(sample);
         else if (event.target.closest('[data-act="export"]')) exportSample(sample);
@@ -5808,7 +5835,11 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (!row) return;
         const sample = app.samples.find((item) => item.id === Number(row.dataset.id));
         if (!sample) return;
-        if (event.target.type === 'range') sample.gain = Number(event.target.value) / 100;
+        if (event.target.type === 'range') {
+            sample.gain = Number(event.target.value) / 100;
+            // громкость дорожки применяется к играющему голосу мгновенно, без пересборки
+            applySampleGains();
+        }
         else if (event.target.dataset.field === 'start') {
             const value = parseSeconds(event.target.value);
             if (Number.isFinite(value)) sample.start = clamp(value, 0, Math.max(0, app.buffer.duration - 0.01));
