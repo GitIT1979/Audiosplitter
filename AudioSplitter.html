@@ -670,11 +670,6 @@
 
                     <div class="spacer"></div>
 
-                    <div class="volume">
-                        <span aria-hidden="true">🔊</span>
-                        <input type="range" id="volume" min="0" max="1" step="0.01" value="1" aria-label="Громкость">
-                    </div>
-
                     <div class="zoom-group">
                         <button type="button" class="icon-btn" id="zoomOut" aria-label="Уменьшить масштаб" title="Уменьшить (Ctrl + колесо)">−</button>
                         <span class="zoom-label" id="zoomLabel">×1</span>
@@ -1387,7 +1382,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
         playBtn: $('playBtn'), stopBtn: $('stopBtn'), rewBtn: $('rewBtn'), fwdBtn: $('fwdBtn'),
         loopBtn: $('loopBtn'), trackMuteBtn: $('trackMuteBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
-        timeNow: $('timeNow'), timeTotal: $('timeTotal'), seekBar: $('seekBar'), volume: $('volume'),
+        timeNow: $('timeNow'), timeTotal: $('timeTotal'), seekBar: $('seekBar'),
         zoomIn: $('zoomIn'), zoomOut: $('zoomOut'), zoomLabel: $('zoomLabel'), fitBtn: $('fitBtn'),
         waveWrap: $('waveWrap'), wave: $('wave'), waveHint: $('waveHint'),
         selBar: $('selBar'), selText: $('selText'), selPlay: $('selPlay'), selAdd: $('selAdd'), selCut: $('selCut'), selDelete: $('selDelete'), selClear: $('selClear'), selTrim: $('selTrim'),
@@ -1436,7 +1431,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         view: { start: 0, end: 1 },
         zoom: 1,
         loop: false,
-        volume: 1,
         speed: 1,
         nextClipId: 1,
         nextSampleId: 1,
@@ -1529,6 +1523,93 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return { vocal: pick('vocal'), instrumental: pick('instrumental'), bass: pick('bass'), highs: pick('highs') };
     }
 
+    // Дорожки в AudioWorklet: считаются в отдельном потоке звука, поэтому занятый
+    // экспортом главный поток не «заедает» звучание повтором последнего буфера
+    async function buildStemWorklet(ctx, dest) {
+        const code = `
+class StemsProcessor extends AudioWorkletProcessor {
+    constructor() {
+        super();
+        const mk = (type, freq) => {
+            const w = 2 * Math.PI * freq / sampleRate, cs = Math.cos(w), al = Math.sin(w) / (2 * 0.7071);
+            let b0, b1, b2, a1, a2;
+            if (type === 'lp') { b0 = (1 - cs) / 2; b1 = 1 - cs; b2 = (1 - cs) / 2; }
+            else { b0 = (1 + cs) / 2; b1 = -(1 + cs); b2 = (1 + cs) / 2; }
+            const a0 = 1 + al; b0 /= a0; b1 /= a0; b2 /= a0; a1 = -2 * cs / a0; a2 = (1 - al) / a0;
+            let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+            return (x) => { const y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2; x2 = x1; x1 = x; y2 = y1; y1 = y; return y; };
+        };
+        const chain = (...fs) => (x) => { for (const f of fs) x = f(x); return x; };
+        this.bassL = chain(mk('lp', 140), mk('lp', 140));
+        this.bassR = chain(mk('lp', 140), mk('lp', 140));
+        this.highL = chain(mk('hp', 8000), mk('hp', 8000));
+        this.highR = chain(mk('hp', 8000), mk('hp', 8000));
+        // вокал — центр в полосе 150 Гц – 8 кГц: как в экспорте
+        this.mid = chain(mk('hp', 150), mk('hp', 150), mk('lp', 8000), mk('lp', 8000));
+        this.g = { vocal: 1, instrumental: 1, bass: 1, highs: 1 };
+        this.acc = { vocal: 0, instrumental: 0, bass: 0, highs: 0 };
+        this.count = 0;
+        this.port.onmessage = (e) => { if (e.data && e.data.gains) this.g = e.data.gains; };
+    }
+    process(inputs, outputs) {
+        const input = inputs[0], output = outputs[0];
+        if (!output || !output.length) return true;
+        const oL = output[0];
+        const oR = output.length > 1 ? output[1] : output[0];
+        const L = input && input.length ? input[0] : null;
+        const R = input && input.length > 1 ? input[1] : L;
+        const g = this.g;
+        for (let i = 0; i < oL.length; i++) {
+            const l = L ? L[i] : 0;
+            const r = R ? R[i] : l;
+            const mid = this.mid((l + r) * 0.5);
+            const bl = this.bassL(l), br = this.bassR(r);
+            const hl = this.highL(l), hr = this.highR(r);
+            const v = mid * g.vocal;
+            const il = (l - bl - mid - hl) * g.instrumental;
+            const ir = (r - br - mid - hr) * g.instrumental;
+            oL[i] = il + bl * g.bass + v + hl * g.highs;
+            oR[i] = ir + br * g.bass + v + hr * g.highs;
+            this.acc.vocal += v * v;
+            this.acc.instrumental += il * il + ir * ir;
+            this.acc.bass += bl * g.bass * (bl * g.bass) + br * g.bass * (br * g.bass);
+            this.acc.highs += hl * g.highs * (hl * g.highs) + hr * g.highs * (hr * g.highs);
+        }
+        this.count += oL.length;
+        if (this.count >= 4800) {
+            const inv = 1 / this.count;
+            this.port.postMessage({
+                meters: {
+                    vocal: Math.sqrt(this.acc.vocal * inv),
+                    instrumental: Math.sqrt(this.acc.instrumental * inv * 0.5),
+                    bass: Math.sqrt(this.acc.bass * inv * 0.5),
+                    highs: Math.sqrt(this.acc.highs * inv * 0.5),
+                },
+            });
+            this.acc = { vocal: 0, instrumental: 0, bass: 0, highs: 0 };
+            this.count = 0;
+        }
+        return true;
+    }
+}
+registerProcessor('audiosplitter-stems', StemsProcessor);`;
+        const url = URL.createObjectURL(new Blob([code], { type: 'application/javascript' }));
+        await ctx.audioWorklet.addModule(url);
+        URL.revokeObjectURL(url);
+        const node = new AudioWorkletNode(ctx, 'audiosplitter-stems', {
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            channelCount: 2,
+            channelCountMode: 'explicit',
+            outputChannelCount: [2],
+        });
+        node.port.onmessage = (event) => {
+            if (event.data && event.data.meters) Object.assign(stemMeters, event.data.meters);
+        };
+        node.connect(dest);
+        return { node, meters: stemMeters };
+    }
+
     function buildStemProcessor(ctx, dest) {
         const node = ctx.createScriptProcessor(4096, 2, 2);
         const rate = ctx.sampleRate;
@@ -1599,6 +1680,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     let resumeArmed = false;
 
+    let audioNodesPromise = null;
+
     async function ensureRunning() {
         const ctx = getContext();
         if (ctx.state === 'suspended') {
@@ -1621,27 +1704,45 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             }
         }
         if (!player.nodes) {
-            const pre = ctx.createGain();
-            const low = ctx.createBiquadFilter();
-            low.type = 'lowshelf';
-            low.frequency.value = 220;
-            const high = ctx.createBiquadFilter();
-            high.type = 'highshelf';
-            high.frequency.value = 4000;
-            const master = ctx.createGain();
-            pre.connect(low);
-            low.connect(high);
-            high.connect(master);
-            master.connect(ctx.destination);
-            player.out = master;
-            // звук всегда идёт через дорожки: потоковый процессор считает их тем же
-            // движком, что и экспорт, сумма веток при 100 % равна исходнику
-            const stems = buildStemProcessor(ctx, pre);
-            // мьют основного трека: глушит только его, дорожки-сэмплы идут в мастер мимо
-            const trackMute = ctx.createGain();
-            trackMute.connect(stems.node);
-            player.nodes = { pre, low, high, master, stems, trackMute };
-            player.gain = master;
+            // создание графа с await внутри (AudioWorklet) — один общий промис,
+            // чтобы параллельные вызовы не построили два графа
+            if (!audioNodesPromise) {
+                audioNodesPromise = (async () => {
+                    const pre = ctx.createGain();
+                    const low = ctx.createBiquadFilter();
+                    low.type = 'lowshelf';
+                    low.frequency.value = 220;
+                    const high = ctx.createBiquadFilter();
+                    high.type = 'highshelf';
+                    high.frequency.value = 4000;
+                    const master = ctx.createGain();
+                    pre.connect(low);
+                    low.connect(high);
+                    high.connect(master);
+                    master.connect(ctx.destination);
+                    player.out = master;
+                    // звук всегда идёт через дорожки: сначала пробуем AudioWorklet (отдельный
+                    // поток), при отсутствии — потоковый процессор в главном потоке
+                    let stems;
+                    try {
+                        stems = await buildStemWorklet(ctx, pre);
+                    } catch (error) {
+                        console.warn('AudioWorklet недоступен — потоковый процессор', error);
+                        stems = buildStemProcessor(ctx, pre);
+                    }
+                    // мьют основного трека: глушит только его, дорожки-сэмплы идут в мастер мимо
+                    const trackMute = ctx.createGain();
+                    trackMute.connect(stems.node);
+                    player.nodes = { pre, low, high, master, stems, trackMute };
+                    player.gain = master;
+                })();
+            }
+            try {
+                await audioNodesPromise;
+            } catch (error) {
+                audioNodesPromise = null;
+                throw error;
+            }
         }
         applyLiveParams();
         return ctx;
@@ -1657,13 +1758,17 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         nodes.pre.gain.setTargetAtTime(safeGain(app.gainDb + extra), when, 0.01);
         nodes.low.gain.setTargetAtTime(app.lowDb, when, 0.01);
         nodes.high.gain.setTargetAtTime(app.highDb, when, 0.01);
-        nodes.master.gain.setTargetAtTime(app.volume, when, 0.01);
         applyStemParams();
     }
 
-    // Уровни дорожек: потоковый процессор читает их сам на каждом блоке —
-    // ползунки и соло действуют мгновенно, без нод и планировщика
-    function applyStemParams() { /* состояние живёт в app.stemGains и player.stemSolo */ }
+    // Уровни дорожек: AudioWorklet получает их сообщением (мгновенно),
+    // ScriptProcessor-фолбэк читает сам на каждом блоке
+    function applyStemParams() {
+        const stems = player.nodes && player.nodes.stems;
+        if (stems && stems.node && stems.node.port) {
+            stems.node.port.postMessage({ gains: effectiveStemGains() });
+        }
+    }
 
     function sameStemGains(a, b) {
         return STEMS.every((stem) => Math.abs((a[stem.id] ?? 1) - (b[stem.id] ?? 1)) < 1e-3);
@@ -1813,8 +1918,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         return STEMS.some((stem) => Math.abs((gains[stem.id] ?? 1) - 1) > 1e-3);
     }
 
-    // Дорожки считаются блоками: пиковая память не зависит от длины трека
-    function mixStemsInto(left, right, srcL, srcR, s0, frames, gains, rate) {
+    // Дорожки считаются блоками: пиковая память не зависит от длины трека.
+    // Асинхронно: между блоками отдаём событийный цикл — интерфейс живой и звук не заедает
+    async function mixStemsInto(left, right, srcL, srcR, s0, frames, gains, rate) {
         const gVocal = gains.vocal ?? 1;
         const gInst = gains.instrumental ?? 1;
         const gBass = gains.bass ?? 1;
@@ -1864,6 +1970,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 left[pos + i] = instL * gInst + bL[i] * gBass + vv[i] * gVocal + hL[i] * gHigh;
                 right[pos + i] = instR * gInst + bR[i] * gBass + vv[i] * gVocal + hR[i] * gHigh;
             }
+            await tick();
         }
     }
 
@@ -1880,7 +1987,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     // Главный рендер: фрагмент + дорожки + тембр + фейды + сэмплы + скорость.
     // Прослушивание и экспорт идут через одну функцию, поэтому совпадают.
-    function renderRange(start, end, opts = {}) {
+    // Асинхронный: тяжёлые циклы уступают событийному циклу — страница не замирает
+    async function renderRange(start, end, opts = {}) {
         const source = app.buffer;
         const rate = source.sampleRate;
         const s0 = clamp(Math.floor(start * rate), 0, source.length);
@@ -1901,7 +2009,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 left.set(srcL.subarray(s0, s1));
                 right.set(srcR.subarray(s0, s1));
             } else {
-                mixStemsInto(left, right, srcL, srcR, s0, frames, gains, rate);
+                await mixStemsInto(left, right, srcL, srcR, s0, frames, gains, rate);
             }
         }
 
@@ -1948,7 +2056,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         const speed = opts.speed || 1;
         if (Math.abs(speed - 1) > 0.001) {
             left = timeScale(left, speed);
+            await tick();
             right = timeScale(right, speed);
+            await tick();
         }
 
         return { left, right, sampleRate: rate, frames: left.length, peak: peakOf(left, right) };
@@ -2704,7 +2814,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
                 // живой путь: исходный буфер напрямую и сразу с места start — без копирований
                 playBuffer(app.buffer, { start, end }, start, 1, opts.samples !== false);
             } else {
-                const data = renderRange(start, end, renderOpts);
+                const data = await renderRange(start, end, renderOpts);
                 if (!data) { hideToast(); return; }
                 const buffer = ctx.createBuffer(2, data.frames, data.sampleRate);
                 buffer.copyToChannel(data.left, 0);
@@ -2925,8 +3035,18 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
             if (active) {
                 g.fillStyle = hexToRgba(color, 0.95);
-                g.fillRect(x1 - 1, waveTop, 4, waveH);
-                g.fillRect(x2 - 3, waveTop, 4, waveH);
+                g.fillRect(x1 - 2, waveTop, 6, waveH);
+                g.fillRect(x2 - 4, waveTop, 6, waveH);
+                // ручки-подсказки: края фрагмента тянутся по отдельности
+                const midY = waveTop + waveH / 2;
+                g.fillStyle = '#ffffff';
+                g.font = '600 13px system-ui, sans-serif';
+                g.textAlign = 'center';
+                g.textBaseline = 'middle';
+                g.fillText('⇔', x1 + 5, midY);
+                g.fillText('⇔', x2 - 5, midY);
+                g.textAlign = 'start';
+                g.textBaseline = 'alphabetic';
             }
 
             if (x2 - x1 > 64) {
@@ -3025,7 +3145,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
 
     function hitClipEdge(x) {
-        const tolerance = 7;
+        // широкая зона захвата: край фрагмента легко взять и тянуть независимо от другого
+        const tolerance = 12;
         for (let i = app.clips.length - 1; i >= 0; i--) {
             const clip = app.clips[i];
             if (Math.abs(x - timeToX(clip.start)) <= tolerance) return { clip, side: 'start' };
@@ -5353,9 +5474,9 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     }
 
     // Фиксация: впечатывает текущую обработку в трек, дальше работаем с готовым звуком
-    function bounceMix() {
+    async function bounceMix() {
         if (!app.buffer || app.busy) return;
-        const data = renderRange(0, app.buffer.duration, soundOptions());
+        const data = await renderRange(0, app.buffer.duration, soundOptions());
         if (!data) return;
 
         snapshot('фиксация обработки');
@@ -5392,7 +5513,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         try {
             toast('Готовим сведение…', 'info', 0);
             await tick();
-            const data = renderRange(range.start, range.end, { ...soundOptions(), fadeIn: 0, fadeOut: 0 });
+            const data = await renderRange(range.start, range.end, { ...soundOptions(), fadeIn: 0, fadeOut: 0 });
             if (!data) { hideToast(); return; }
 
             const base = `${safeFile(app.fileName)}_mix`;
@@ -5583,7 +5704,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
 
     async function exportAudio(start, end, options, baseName) {
         const format = el.format.value;
-        const data = renderRange(start, end, options);
+        const data = await renderRange(start, end, options);
         if (!data) { toast('Пустой фрагмент', 'error'); return; }
 
         if (format === 'wav') {
@@ -5916,11 +6037,6 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     el.voiceTune.addEventListener('input', updateVoiceLabels);
     el.voicePreviewBtn.addEventListener('click', previewVoice);
     el.voiceApplyBtn.addEventListener('click', applyVoice);
-
-    el.volume.addEventListener('input', () => {
-        app.volume = Number(el.volume.value);
-        applyLiveParams();
-    });
 
     el.zoomIn.addEventListener('click', () => zoomTo(app.zoom * 1.6));
     el.zoomOut.addEventListener('click', () => zoomTo(app.zoom / 1.6));
@@ -6319,8 +6435,8 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
             app.selection = { start, end };
             addClipFromSelection();
         },
-        analyze(start, end, stems, withSamples, speed) {
-            const data = renderRange(start, end, {
+        async analyze(start, end, stems, withSamples, speed) {
+            const data = await renderRange(start, end, {
                 stems: stems || null,
                 samples: !!withSamples,
                 speed: speed || 1,
