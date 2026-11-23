@@ -787,6 +787,7 @@
                         <h2>Дорожки</h2>
                             <div class="spacer"></div>
                             <button type="button" class="icon-btn" id="stemsPlayBtn" title="Послушать микс с текущими уровнями — без сохранения файла" aria-label="Прослушать дорожки">▶</button>
+                            <button type="button" class="btn btn-ghost small" id="stemsSplitBtn" title="Разделить трек на четыре отдельные дорожки улучшенным методом (STFT): центр выделяется по частотно-временным маскам">⤗ Разделить</button>
                             <button type="button" class="btn btn-ghost small" id="stemsAllBtn" title="Скачать все четыре дорожки отдельными файлами">⤓ все</button>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
@@ -1391,7 +1392,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
-        stemsResetBtn: $('stemsResetBtn'), stemsAllBtn: $('stemsAllBtn'), stemsPlayBtn: $('stemsPlayBtn'),
+        stemsResetBtn: $('stemsResetBtn'), stemsAllBtn: $('stemsAllBtn'), stemsSplitBtn: $('stemsSplitBtn'), stemsPlayBtn: $('stemsPlayBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
@@ -5429,6 +5430,7 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         el.perfBtn.disabled = !ready;
         el.freshBtn.disabled = !ready || !app.originalBuffer;
         if (el.stemsAllBtn) el.stemsAllBtn.disabled = !ready;
+        if (el.stemsSplitBtn) el.stemsSplitBtn.disabled = !ready;
     }
 
     // «Прослушать» — переключатель: второе нажатие убирает звук
@@ -5791,6 +5793,147 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         }
     }
 
+    /* --------------------------------------------------- качественное разделение */
+
+    const SPLIT_FRAME = 4096;
+    const SPLIT_HOP = 1024;
+
+    // Улучшенное разделение (STFT): центр (вокал) выделяется покомпонентно — маской
+    // когерентности каналов в полосе 150 Гц – 8 кГц, а не широкой полосой (L+R)/2.
+    // Результат — четыре ОТДЕЛЬНЫЕ дорожки-слоя; их сумма бит в бит равна исходнику
+    async function splitTrackQuality() {
+        if (!app.buffer || app.busy) return;
+        const duration = app.buffer.duration;
+        if (duration > 240
+            && !window.confirm(`Трек ${fmt(duration, false)}: разделение займёт до минуты и десятки-сотни МБ памяти. Продолжить?`)) {
+            return;
+        }
+        app.busy = true;
+        updateMixUi();
+        try {
+            const src = app.buffer;
+            const rate = src.sampleRate;
+            const len = src.length;
+            const L = src.getChannelData(0).slice();
+            const R = (src.numberOfChannels > 1 ? src.getChannelData(1) : src.getChannelData(0)).slice();
+            toast('Разделяю трек… 0%', 'info', 0);
+            await tick();
+
+            // 1) центр: STFT обоих каналов, мягкая маска по когерентности фаз
+            const win = hannWindow(SPLIT_FRAME);
+            const reL = new Float32Array(SPLIT_FRAME), imL = new Float32Array(SPLIT_FRAME);
+            const reR = new Float32Array(SPLIT_FRAME), imR = new Float32Array(SPLIT_FRAME);
+            const cL = new Float32Array(len), cR = new Float32Array(len);
+            const nrm = new Float32Array(len);
+            const binLo = Math.max(1, Math.floor(150 * SPLIT_FRAME / rate));
+            const binHi = Math.min(SPLIT_FRAME / 2, Math.ceil(8000 * SPLIT_FRAME / rate));
+            const frames = len > SPLIT_FRAME ? Math.floor((len - SPLIT_FRAME) / SPLIT_HOP) + 1 : 0;
+            const half = SPLIT_FRAME / 2;
+            for (let f = 0; f < frames; f++) {
+                const off = f * SPLIT_HOP;
+                for (let i = 0; i < SPLIT_FRAME; i++) {
+                    const w = win[i];
+                    reL[i] = L[off + i] * w; imL[i] = 0;
+                    reR[i] = R[off + i] * w; imR[i] = 0;
+                }
+                fftRadix2(reL, imL, false);
+                fftRadix2(reR, imR, false);
+                for (let b = 1; b < half; b++) {
+                    const b2 = SPLIT_FRAME - b;
+                    let mask = 0;
+                    if (b >= binLo && b <= binHi) {
+                        const mL = Math.hypot(reL[b], imL[b]);
+                        const mR = Math.hypot(reR[b], imR[b]);
+                        const coh = (reL[b] * reR[b] + imL[b] * imR[b]) / (mL * mR + 1e-12);
+                        if (coh > 0.5) mask = clamp((coh - 0.5) / 0.35, 0, 1);
+                    }
+                    reL[b] *= mask; imL[b] *= mask;
+                    reR[b] *= mask; imR[b] *= mask;
+                    reL[b2] *= mask; imL[b2] *= mask;
+                    reR[b2] *= mask; imR[b2] *= mask;
+                }
+                fftRadix2(reL, imL, true);
+                fftRadix2(reR, imR, true);
+                for (let i = 0; i < SPLIT_FRAME; i++) {
+                    cL[off + i] += reL[i] * win[i];
+                    cR[off + i] += reR[i] * win[i];
+                    nrm[off + i] += win[i] * win[i];
+                }
+                if ((f & 127) === 127) {
+                    toast(`Разделяю трек… ${Math.round((f / frames) * 70)}%`, 'info', 0);
+                    await tick();
+                }
+            }
+            for (let i = 0; i < len; i++) {
+                const inv = nrm[i] > 1e-6 ? 1 / nrm[i] : 0;
+                cL[i] *= inv;
+                cR[i] *= inv;
+            }
+
+            // 2) остаток = исходник минус центр; из него — бас, верх и инструментал
+            const runFilters = async (data, ...filters) => {
+                for (let pos = 0; pos < data.length; pos += 65536) {
+                    const n = Math.min(65536, data.length - pos);
+                    filters.forEach((flt) => flt.process(data.subarray(pos, pos + n)));
+                    await tick();
+                }
+            };
+            const rL = new Float32Array(len), rR = new Float32Array(len);
+            for (let i = 0; i < len; i++) {
+                rL[i] = L[i] - cL[i];
+                rR[i] = R[i] - cR[i];
+            }
+            const bL = rL.slice(), bR = rR.slice();
+            const hL = rL.slice(), hR = rR.slice();
+            toast('Разделяю трек… 75%', 'info', 0);
+            await tick();
+            await runFilters(bL, makeFilter('lowpass', 140, rate), makeFilter('lowpass', 140, rate));
+            await runFilters(bR, makeFilter('lowpass', 140, rate), makeFilter('lowpass', 140, rate));
+            await runFilters(hL, makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate));
+            await runFilters(hR, makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate));
+            const iL = new Float32Array(len), iR = new Float32Array(len);
+            for (let k = 0; k < len; k++) {
+                iL[k] = rL[k] - bL[k] - hL[k];
+                iR[k] = rR[k] - bR[k] - hR[k];
+            }
+            toast('Разделяю трек… 90%', 'info', 0);
+            await tick();
+
+            // 3) четыре отдельные дорожки-слоя; отмена возвращает всё
+            snapshot('разделение трека');
+            const ctx = getContext();
+            const mkLayer = (l, r) => {
+                const buf = ctx.createBuffer(2, len, rate);
+                buf.copyToChannel(l, 0);
+                buf.copyToChannel(r, 1);
+                return buf;
+            };
+            [
+                ['Вокал (разделённый)', cL, cR],
+                ['Инструментал (разделённый)', iL, iR],
+                ['Бас (разделённый)', bL, bR],
+                ['Верх (разделённый)', hL, hR],
+            ].forEach(([name, l, r]) => {
+                app.samples.push({ id: app.nextSampleId++, name, buffer: mkLayer(l, r), start: 0, gain: 1 });
+            });
+            renderSamples();
+            draw();
+            // основной трек глушим: слышна сумма слоёв, кнопка 🔈 вернёт исходник
+            app.trackMuted = true;
+            applyTrackMute();
+            updateTransportUi();
+            hideToast();
+            toast('Готово: четыре разделённые дорожки. Основной трек заглушён (🔈 вернёт), ↶ отменит разделение', 'ok', 7000);
+        } catch (error) {
+            console.error(error);
+            hideToast();
+            toast(`Не удалось разделить: ${error.message}`, 'error', 6000);
+        } finally {
+            app.busy = false;
+            updateMixUi();
+        }
+    }
+
     /* ------------------------------------------------------------- загрузка */
 
     function resetSession() {
@@ -6057,6 +6200,7 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
     initCardLayout();
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
+    el.stemsSplitBtn.addEventListener('click', splitTrackQuality);
     el.stemsAllBtn.addEventListener('click', exportAllStems);
     el.stemsPlayBtn.addEventListener('click', previewMix);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
