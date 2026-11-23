@@ -291,6 +291,7 @@
 
         .volume { display: flex; align-items: center; gap: 8px; color: var(--muted); }
         .volume input { width: 88px; }
+        .seek { flex: 1 1 200px; min-width: 140px; }
 
         /* ---------- волна ---------- */
 
@@ -663,6 +664,9 @@
                         <span class="sep">/</span>
                         <span class="total" id="timeTotal">00:00</span>
                     </div>
+
+                    <input type="range" id="seekBar" class="seek" min="0" max="0" step="0.01" value="0"
+                           aria-label="Позиция в треке — потяните, чтобы перемотать" title="Позиция в треке: потяните, чтобы перемотать">
 
                     <div class="spacer"></div>
 
@@ -1383,7 +1387,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         editor: $('editor'), fileName: $('fileName'), fileMeta: $('fileMeta'),
         playBtn: $('playBtn'), stopBtn: $('stopBtn'), rewBtn: $('rewBtn'), fwdBtn: $('fwdBtn'),
         loopBtn: $('loopBtn'), trackMuteBtn: $('trackMuteBtn'), recordBtn: $('recordBtn'), undoBtn: $('undoBtn'),
-        timeNow: $('timeNow'), timeTotal: $('timeTotal'), volume: $('volume'),
+        timeNow: $('timeNow'), timeTotal: $('timeTotal'), seekBar: $('seekBar'), volume: $('volume'),
         zoomIn: $('zoomIn'), zoomOut: $('zoomOut'), zoomLabel: $('zoomLabel'), fitBtn: $('fitBtn'),
         waveWrap: $('waveWrap'), wave: $('wave'), waveHint: $('waveHint'),
         selBar: $('selBar'), selText: $('selText'), selPlay: $('selPlay'), selAdd: $('selAdd'), selCut: $('selCut'), selDelete: $('selDelete'), selClear: $('selClear'), selTrim: $('selTrim'),
@@ -2617,7 +2621,10 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         stopFrames();
         const step = () => {
             if (!player.playing) return;
-            app.playhead = clamp(currentPosition(), 0, playheadLimit());
+            // пока ползунок позиции тянут, курсор следует за ним, а не за плеером
+            app.playhead = seekDragging
+                ? clamp(Number(el.seekBar.value) || 0, 0, app.buffer ? app.buffer.duration : 0)
+                : clamp(currentPosition(), 0, playheadLimit());
             paint();
             player.raf = requestAnimationFrame(step);
         };
@@ -3288,9 +3295,17 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         el.fileMeta.textContent = `${fmt(buffer.duration, false)} · ${(buffer.sampleRate / 1000).toFixed(1)} кГц · ${buffer.numberOfChannels === 1 ? 'моно' : buffer.numberOfChannels === 2 ? 'стерео' : `${buffer.numberOfChannels} кан.`}`;
     }
 
+    let seekDragging = false;
+    let seekTimer = 0;
+
     function updateTimeUi() {
         el.timeNow.textContent = fmt(app.playhead);
         el.timeTotal.textContent = app.buffer ? fmt(app.buffer.duration, false) : '00:00';
+        // ползунок позиции ходит за курсором, пока его не тянут
+        if (el.seekBar && !seekDragging && app.buffer) {
+            if (Number(el.seekBar.max) !== app.buffer.duration) el.seekBar.max = String(app.buffer.duration);
+            el.seekBar.value = String(Math.min(app.playhead, app.buffer.duration));
+        }
     }
 
     function updateTransportUi() {
@@ -5766,7 +5781,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         if (el.waveEmpty) el.waveEmpty.hidden = has;
         if (el.waveHint) el.waveHint.hidden = !has || !!app.selection;
         document.body.classList.toggle('has-track', has);
-        [el.playBtn, el.stopBtn, el.rewBtn, el.fwdBtn, el.recordBtn, el.zoomIn, el.zoomOut, el.fitBtn, el.selectAllBtn, el.trackMuteBtn].forEach((btn) => {
+        [el.playBtn, el.stopBtn, el.rewBtn, el.fwdBtn, el.recordBtn, el.zoomIn, el.zoomOut, el.fitBtn, el.selectAllBtn, el.trackMuteBtn, el.seekBar].forEach((btn) => {
             if (btn) btn.disabled = !has;
         });
     }
@@ -5843,6 +5858,31 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
     };
     el.rewBtn.addEventListener('click', () => seekBy(-10));
     el.fwdBtn.addEventListener('click', () => seekBy(10));
+
+    // Ползунок позиции: тянешь — перематываешь; при игре звук продолжается с нового места
+    el.seekBar.addEventListener('pointerdown', () => { seekDragging = true; });
+    el.seekBar.addEventListener('input', () => {
+        if (!app.buffer) return;
+        seekDragging = true; // курсор следует за ползунком и с клавиатуры
+        app.playhead = clamp(Number(el.seekBar.value) || 0, 0, app.buffer.duration);
+        el.timeNow.textContent = fmt(app.playhead);
+        draw();
+        // при игре перематываем с короткой задержкой — драг остаётся плавным
+        clearTimeout(seekTimer);
+        seekTimer = setTimeout(() => {
+            if (player.playing && !recorder.active) playRange(app.playhead, app.buffer.duration, optionsForContext());
+        }, 160);
+    });
+    const finishSeek = () => {
+        if (!seekDragging) return;
+        seekDragging = false;
+        if (app.buffer && player.playing && !recorder.active) {
+            playRange(app.playhead, app.buffer.duration, optionsForContext());
+        }
+    };
+    el.seekBar.addEventListener('pointerup', finishSeek);
+    el.seekBar.addEventListener('pointercancel', finishSeek);
+    el.seekBar.addEventListener('change', finishSeek);
 
     el.loopBtn.addEventListener('click', () => {
         app.loop = !app.loop;
