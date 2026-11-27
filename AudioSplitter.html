@@ -788,6 +788,7 @@
                             <div class="spacer"></div>
                             <button type="button" class="icon-btn" id="stemsPlayBtn" title="Послушать микс с текущими уровнями — без сохранения файла" aria-label="Прослушать дорожки">▶</button>
                             <button type="button" class="btn btn-ghost small" id="stemsSplitBtn" title="Разделить трек на четыре отдельные дорожки улучшенным методом (STFT): центр выделяется по частотно-временным маскам">⤗ Разделить</button>
+                            <button type="button" class="btn btn-ghost small" id="stemsNeuralBtn" title="Нейро-разделение на вокал и минус (нейросеть Spleeter, ONNX 2×26 МБ — скачиваются один раз)">🧠 Нейро</button>
                             <button type="button" class="btn btn-ghost small" id="stemsAllBtn" title="Скачать все четыре дорожки отдельными файлами">⤓ все</button>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
@@ -1392,7 +1393,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
-        stemsResetBtn: $('stemsResetBtn'), stemsAllBtn: $('stemsAllBtn'), stemsSplitBtn: $('stemsSplitBtn'), stemsPlayBtn: $('stemsPlayBtn'),
+        stemsResetBtn: $('stemsResetBtn'), stemsAllBtn: $('stemsAllBtn'), stemsSplitBtn: $('stemsSplitBtn'), stemsNeuralBtn: $('stemsNeuralBtn'), stemsPlayBtn: $('stemsPlayBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
@@ -5431,6 +5432,7 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         el.freshBtn.disabled = !ready || !app.originalBuffer;
         if (el.stemsAllBtn) el.stemsAllBtn.disabled = !ready;
         if (el.stemsSplitBtn) el.stemsSplitBtn.disabled = !ready;
+        if (el.stemsNeuralBtn) el.stemsNeuralBtn.disabled = !ready;
     }
 
     // «Прослушать» — переключатель: второе нажатие убирает звук
@@ -5939,6 +5941,310 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         }
     }
 
+    /* --------------------------------------------------- нейро-разделение */
+
+    // Нейросеть Spleeter (ONNX, int8, 2×26 МБ с Hugging Face, CORS открыт):
+    // вход x [2,1,512,1024] = каналы × чанки × кадры × бины (magnitude первых 1024
+    // бинов STFT 4096/1024/ханн, center), выход y — маскированная магнитуда стема.
+    // Wiener-маска из двух моделей → ISTFT; «минус» = исходник − вокал.
+    const NEURAL = {
+        // fp16: 19,7 МБ на стем, без дефекта калибровки int8 (тот на больших магнитудах давал нули)
+        URLS: {
+            v: 'https://huggingface.co/csukuangfj/sherpa-onnx-spleeter-2stems-fp16/resolve/main/vocals.fp16.onnx',
+            acc: 'https://huggingface.co/csukuangfj/sherpa-onnx-spleeter-2stems-fp16/resolve/main/accompaniment.fp16.onnx',
+        },
+        ORT: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js',
+        ORT_WASM: 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/',
+        N_FFT: 4096,
+        HOP: 1024,
+        BINS: 1024,
+        CHUNK: 512,
+    };
+    const neural = { sessions: null, loadingPromise: null };
+
+    function loadScriptOnce(url) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('не удалось загрузить ' + url));
+            document.head.appendChild(script);
+        });
+    }
+
+    async function ensureOrt() {
+        if (window.ort) return;
+        toast('Загружаю движок ONNX Runtime…', 'info', 0);
+        await loadScriptOnce(NEURAL.ORT);
+        window.ort.env.wasm.numThreads = 1; // GitHub Pages без cross-origin isolation
+        window.ort.env.wasm.wasmPaths = NEURAL.ORT_WASM;
+        if (!window.ort) throw new Error('ONNX Runtime не загрузился');
+    }
+
+    async function downloadNeuralModel(kind) {
+        const cacheKey = `neural_fp16_${kind}`;
+        const label = kind === 'v' ? 'вокал' : 'минус';
+        try {
+            const cached = await idbGet(cacheKey);
+            if (cached instanceof ArrayBuffer && cached.byteLength > 1000000) return cached;
+        } catch (error) { /* кеш недоступен — скачиваем */ }
+        let lastError = null;
+        // сеть может «зависнуть» на середине: сторож-таймер и до трёх попыток
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            if (attempt > 1) await new Promise((r) => setTimeout(r, 2000 * attempt));
+            const controller = new AbortController();
+            const watchdog = setTimeout(() => controller.abort(), 180000);
+            try {
+                // повтору добавляем свежий параметр: сорванный запрос мог отравить кеш 404
+                const bust = attempt > 1 ? `?r=${Date.now()}` : '';
+                const response = await fetch(NEURAL.URLS[kind] + bust, { signal: controller.signal, cache: 'reload' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const totalMb = Math.round(Number(response.headers.get('content-length')) / 1048576) || 26;
+                const reader = response.body.getReader();
+                const parts = [];
+                let received = 0;
+                for (;;) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    parts.push(value);
+                    received += value.length;
+                    toast(`Модель (${label}): ${Math.round(received / 1048576)} из ${totalMb} МБ — один раз, потом из памяти`, 'info', 0);
+                }
+                clearTimeout(watchdog);
+                const buffer = new Uint8Array(received);
+                let pos = 0;
+                for (const part of parts) { buffer.set(part, pos); pos += part.length; }
+                try { await idbSet(cacheKey, buffer.buffer); } catch (error) { /* нет места — работаем без кеша */ }
+                return buffer.buffer;
+            } catch (error) {
+                clearTimeout(watchdog);
+                lastError = error;
+                if (attempt < 3) {
+                    toast(`Модель (${label}): попытка ${attempt} сорвалась — повторяю`, 'warn', 2500);
+                    await tick();
+                }
+            }
+        }
+        throw new Error(`модель ${label} не скачалась: ${lastError && lastError.message}`);
+    }
+
+    async function ensureNeuralSessions() {
+        if (neural.sessions) return neural.sessions;
+        if (!neural.loadingPromise) {
+            neural.loadingPromise = (async () => {
+                await ensureOrt();
+                const vb = await downloadNeuralModel('v');
+                const ab = await downloadNeuralModel('acc');
+                toast('Готовлю модель к работе… до минуты на первый раз', 'info', 0);
+                await tick();
+                const options = { executionProviders: ['wasm'], graphOptimizationLevel: 'all' };
+                const v = await ort.InferenceSession.create(new Uint8Array(vb), options);
+                const a = await ort.InferenceSession.create(new Uint8Array(ab), options);
+                neural.sessions = { vocals: v, acc: a };
+                return neural.sessions;
+            })();
+        }
+        try {
+            return await neural.loadingPromise;
+        } catch (error) {
+            neural.loadingPromise = null; // следующая попытка начнёт заново
+            throw error;
+        }
+    }
+
+    // ОДИН чанк: x[2,1,512,1024] → маскированные магнитуды стемов [2,1,512,1024]
+    async function runNeuralChunk(sessions, chunkMag, frames) {
+        const B = NEURAL.BINS;
+        const input = new Float32Array(2 * frames * B);
+        for (let c = 0; c < 2; c++) {
+            const src = chunkMag[c];
+            const base = c * frames * B;
+            for (let f = 0; f < frames; f++) {
+                input.set(src.subarray(f * B, f * B + B), base + f * B);
+            }
+        }
+        const tensor = new ort.Tensor('float32', input, [2, 1, frames, B]);
+        const [vOut, aOut] = await Promise.all([
+            sessions.vocals.run({ x: tensor }),
+            sessions.acc.run({ x: tensor }),
+        ]);
+        const mv = vOut.y.data;
+        const ma = aOut.y.data;
+        // Wiener-маска (как в sherpa-onnx): v² /(v² + a²)
+        const out = new Float32Array(mv.length);
+        for (let i = 0; i < out.length; i++) {
+            const v2 = mv[i] * mv[i];
+            const a2 = ma[i] * ma[i];
+            out[i] = v2 / (v2 + a2 + 1e-10);
+        }
+        return out;
+    }
+
+    async function splitTrackNeural() {
+        if (!app.buffer || app.busy) return;
+        const audioSeconds = app.buffer.duration;
+        if (audioSeconds > 240
+            && !window.confirm(`Трек ${fmt(audioSeconds, false)}: нейро-разделение может занять несколько минут (однопоточный WASM). Продолжить?`)) {
+            return;
+        }
+        app.busy = true;
+        updateMixUi();
+        try {
+            const sessions = await ensureNeuralSessions();
+            const src = app.buffer;
+            const rate = src.sampleRate;
+            const len = src.length;
+            const halfPad = NEURAL.N_FFT / 2;
+            const frames = Math.floor(len / NEURAL.HOP) + 1;               // center=true
+            const chunkFrames = NEURAL.CHUNK;
+            const numChunks = Math.ceil(frames / chunkFrames);
+            const totalFrames = numChunks * chunkFrames;
+            const win = hannWindow(NEURAL.N_FFT);
+
+            const L = src.getChannelData(0);
+            const R = src.numberOfChannels > 1 ? src.getChannelData(1) : L;
+            const padded = new Float32Array(len + 2 * halfPad);
+            padded.set(L, halfPad);
+            const paddedR = new Float32Array(len + 2 * halfPad);
+            paddedR.set(R, halfPad);
+
+            const vocalsL = new Float32Array(len);
+            const vocalsR = new Float32Array(len);
+            const winSum = new Float32Array(len);
+            const re = new Float32Array(NEURAL.N_FFT);
+            const im = new Float32Array(NEURAL.N_FFT);
+            const reR = new Float32Array(NEURAL.N_FFT);
+            const imR = new Float32Array(NEURAL.N_FFT);
+            const win2Buf = new Float32Array(NEURAL.N_FFT);
+
+            const mag = [new Float32Array(totalFrames * NEURAL.BINS), new Float32Array(totalFrames * NEURAL.BINS)];
+            const reAll = [new Float32Array(totalFrames * NEURAL.BINS), new Float32Array(totalFrames * NEURAL.BINS)];
+            const imAll = [new Float32Array(totalFrames * NEURAL.BINS), new Float32Array(totalFrames * NEURAL.BINS)];
+            const chans = [padded, paddedR];
+            const padData = new Float32Array(NEURAL.N_FFT);
+
+            toast('Нейро-разделение: анализ 0%…', 'info', 0);
+            await tick();
+            // STFT всех каналов в буферы магнитуд + комплекс (первые 1024 бина)
+            for (let c = 0; c < 2; c++) {
+                const sig = chans[c];
+                const mBuf = mag[c];
+                const rBuf = reAll[c];
+                const iBuf = imAll[c];
+                for (let f = 0; f < totalFrames; f++) {
+                    const off = f * NEURAL.HOP;
+                    const last = Math.min(NEURAL.N_FFT, Math.max(0, sig.length - off));
+                    if (last === NEURAL.N_FFT) {
+                        for (let i = 0; i < NEURAL.N_FFT; i++) { re[i] = sig[off + i] * win[i]; im[i] = 0; }
+                    } else {
+                        padData.fill(0);
+                        padData.set(sig.subarray(off, off + last), 0);
+                        for (let i = 0; i < NEURAL.N_FFT; i++) { re[i] = padData[i] * win[i]; im[i] = 0; }
+                    }
+                    fftRadix2(re, im, false);
+                    const mBase = f * NEURAL.BINS;
+                    for (let b = 0; b < NEURAL.BINS; b++) {
+                        mBuf[mBase + b] = Math.hypot(re[b], im[b]);
+                        rBuf[mBase + b] = re[b];
+                        iBuf[mBase + b] = im[b];
+                    }
+                    if ((f & 255) === 255) {
+                        toast(`Нейро-разделение: анализ ${Math.round(((c * totalFrames + f) / (2 * totalFrames)) * 40)}%…`, 'info', 0);
+                        await tick();
+                    }
+                }
+            }
+
+            // модель по чанкам → Wiener-маска вокала → сложный спектр вокала
+            for (let k = 0; k < numChunks; k++) {
+                const vMask = await runNeuralChunk(sessions, [mag[0].subarray(k * chunkFrames * NEURAL.BINS, (k + 1) * chunkFrames * NEURAL.BINS),
+                    mag[1].subarray(k * chunkFrames * NEURAL.BINS, (k + 1) * chunkFrames * NEURAL.BINS)], chunkFrames);
+                for (let c = 0; c < 2; c++) {
+                    const rBuf = reAll[c];
+                    const iBuf = imAll[c];
+                    const mBase = k * chunkFrames * NEURAL.BINS;
+                    for (let f = 0; f < chunkFrames; f++) {
+                        for (let b = 0; b < NEURAL.BINS; b++) {
+                            const m = vMask[(c * chunkFrames + f) * NEURAL.BINS + b];
+                            rBuf[mBase + f * NEURAL.BINS + b] *= m;
+                            iBuf[mBase + f * NEURAL.BINS + b] *= m;
+                        }
+                    }
+                }
+                hideToast();
+                toast(`Нейро-разделение: сеть ${Math.round(((k + 1) / numChunks) * 50) + 40}%…`, 'info', 0);
+                await tick();
+            }
+
+            // ISTFT вокала (overlap-add с нормировкой на Σwin²) и «минус» = исходник − вокал
+            toast('Нейро-разделение: сборка 95%…', 'info', 0);
+            await tick();
+            for (let c = 0; c < 2; c++) {
+                const out = c === 0 ? vocalsL : vocalsR;
+                const rBuf = reAll[c];
+                const iBuf = imAll[c];
+                for (let f = 0; f < totalFrames; f++) {
+                    const off = f * NEURAL.HOP;
+                    const mBase = f * NEURAL.BINS;
+                    for (let b = 0; b < NEURAL.BINS; b++) { re[b] = rBuf[mBase + b]; im[b] = iBuf[mBase + b]; }
+                    // эрмитова симметрия: бины выше голосовой полосы — нули,
+                    // зеркала 1..1023 восстанавливаем, иначе IFFT даст комплексный мусор
+                    for (let b = NEURAL.BINS; b <= NEURAL.N_FFT / 2; b++) { re[b] = 0; im[b] = 0; }
+                    for (let b = 1; b < NEURAL.BINS; b++) {
+                        re[NEURAL.N_FFT - b] = re[b];
+                        im[NEURAL.N_FFT - b] = -im[b];
+                    }
+                    fftRadix2(re, im, true);
+                    for (let i = 0; i < NEURAL.N_FFT; i++) {
+                        const sigPos = off + i - halfPad;
+                        if (sigPos >= 0 && sigPos < len) {
+                            out[sigPos] += re[i];
+                            winSum[sigPos] += win[i] * win[i];
+                        }
+                    }
+                    if ((f & 255) === 255) await tick();
+                }
+            }
+            const ctx = getContext();
+            const mk = (chL, chR) => {
+                const b = ctx.createBuffer(2, len, rate);
+                b.copyToChannel(chL, 0);
+                b.copyToChannel(chR, 1);
+                return b;
+            };
+            const vL = new Float32Array(len), vR = new Float32Array(len);
+            for (let i = 0; i < len; i++) {
+                const norm = winSum[i] > 1e-8 ? 1 / winSum[i] : 0;
+                vL[i] = vocalsL[i] * norm;
+                vR[i] = vocalsR[i] * norm;
+            }
+            const minusL = new Float32Array(len);
+            const minusR = new Float32Array(len);
+            for (let i = 0; i < len; i++) { minusL[i] = L[i] - vL[i]; minusR[i] = R[i] - vR[i]; }
+
+            snapshot('нейро-разделение');
+            app.samples.push({ id: app.nextSampleId++, name: 'Вокал (нейро)', buffer: mk(vL, vR), start: 0, gain: 1 });
+            app.samples.push({ id: app.nextSampleId++, name: 'Минус (нейро)', buffer: mk(minusL, minusR), start: 0, gain: 1 });
+            renderSamples();
+            draw();
+            app.trackMuted = true;
+            applyTrackMute();
+            updateTransportUi();
+            hideToast();
+            toast('Готово: «Вокал (нейро)» и «Минус (нейро)» как дорожки. Трек заглушен (🔈 вернёт), ↶ отменит', 'ok', 7000);
+        } catch (error) {
+            console.error(error);
+            hideToast();
+            const reason = /fetch|Failed to fetch|network/i.test(String(error))
+                ? 'нет связи для загрузки модели или движка — подключитесь к сети один раз'
+                : error.message;
+            toast(`Нейро-разделение не удалось: ${reason}`, 'error', 8000);
+        } finally {
+            app.busy = false;
+            updateMixUi();
+        }
+    }
+
     /* ------------------------------------------------------------- загрузка */
 
     function resetSession() {
@@ -6206,6 +6512,7 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
     el.selDelete.addEventListener('click', deleteTrackSelection);
     el.stemsResetBtn.addEventListener('click', resetStems);
     el.stemsSplitBtn.addEventListener('click', splitTrackQuality);
+    el.stemsNeuralBtn.addEventListener('click', splitTrackNeural);
     el.stemsAllBtn.addEventListener('click', exportAllStems);
     el.stemsPlayBtn.addEventListener('click', previewMix);
     el.addClipBtn.addEventListener('click', addClipFromSelection);
@@ -6610,6 +6917,10 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
             return lastTuneRatios ? Array.from(lastTuneRatios.slice(0, 8)).map((v) => Number(v.toFixed(4))) : null;
         },
         get buffer() { return app.buffer; },
+        get neuralSessions() { return neural.sessions; },
+        get NEURAL() { return NEURAL; },
+        fft: fftRadix2,
+        hannWindow,
         get playerNodes() { return player.nodes; },
         async voice(id, settings) {
             const sample = app.samples.find((item) => item.id === Number(id));
