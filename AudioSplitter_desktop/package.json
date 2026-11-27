@@ -1,0 +1,8 @@
+{
+    "name": "audiosplitter",
+    "productName": "AudioSplitter",
+    "version": "1.0.0",
+    "description": "AudioSplitter — аудиоредактор: фрагменты, дорожки, нейро-разделение, запись и сведение",
+    "main": "main.js",
+    "private": true
+}

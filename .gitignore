@@ -5,7 +5,11 @@ build/
 Thumbs.db
 desktop.ini
 
+# Десктоп: рантайм Electron и скачанный архив не хранятся в git (см. AudioSplitter_desktop/README-DESKTOP.md)
+AudioSplitter_desktop/AudioSplitter/
+AudioSplitter_desktop/electron.zip
+
 # Looperman: условия запрещают перераздачу «как есть» — файлы остаются локально
-library/looperman-*.wav
+AudioSplitter_HTML/library/looperman-*.wav
 # Недокачанные файлы браузера
-library/*.crdownload
+AudioSplitter_HTML/library/*.crdownload
