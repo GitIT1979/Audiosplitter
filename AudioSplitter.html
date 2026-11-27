@@ -537,6 +537,8 @@
             background: rgba(255, 255, 255, 0.09); overflow: hidden;
         }
         .stem-meter i { display: block; height: 100%; width: 0; background: var(--c, var(--accent)); transition: width 0.08s linear; }
+        .mini-check { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--muted); cursor: pointer; white-space: nowrap; }
+        .mini-check input { accent-color: var(--accent); margin: 0; }
 
         /* ---------- звук ---------- */
 
@@ -788,7 +790,10 @@
                             <div class="spacer"></div>
                             <button type="button" class="icon-btn" id="stemsPlayBtn" title="Послушать микс с текущими уровнями — без сохранения файла" aria-label="Прослушать дорожки">▶</button>
                             <button type="button" class="btn btn-ghost small" id="stemsSplitBtn" title="Разделить трек на четыре отдельные дорожки улучшенным методом (STFT): центр выделяется по частотно-временным маскам">⤗ Разделить</button>
-                            <button type="button" class="btn btn-ghost small" id="stemsNeuralBtn" title="Нейро-разделение на вокал и минус (нейросеть Spleeter, ONNX 2×26 МБ — скачиваются один раз)">🧠 Нейро</button>
+                            <button type="button" class="btn btn-ghost small" id="stemsNeuralBtn" title="Нейро-разделение на вокал и минус (нейросеть Spleeter, ONNX 2×19,7 МБ — скачиваются один раз)">🧠 Нейро</button>
+                            <label class="mini-check" title="После вокала/минуса разложить минус ещё на бас, верх и инструментал — итог 5 дорожек">
+                                <input type="checkbox" id="neuralPlus4"> +4
+                            </label>
                             <button type="button" class="btn btn-ghost small" id="stemsAllBtn" title="Скачать все четыре дорожки отдельными файлами">⤓ все</button>
                             <button type="button" class="btn btn-ghost small" id="stemsResetBtn" title="Вернуть все дорожки на 100%">Сброс</button>
                         </div>
@@ -1393,7 +1398,7 @@ a.length>D&&(D=a.length,p=0|1.25*D+7200,r=new Int8Array(p));a=u.lame_encode_buff
         clips: $('clips'), clipCount: $('clipCount'), addClipBtn: $('addClipBtn'),
         selectAllBtn: $('selectAllBtn'), format: $('format'),
         stems: $('stems'), mixPreviewBtn: $('mixPreviewBtn'), mixMp3Btn: $('mixMp3Btn'), mixWavBtn: $('mixWavBtn'), bounceBtn: $('bounceBtn'),
-        stemsResetBtn: $('stemsResetBtn'), stemsAllBtn: $('stemsAllBtn'), stemsSplitBtn: $('stemsSplitBtn'), stemsNeuralBtn: $('stemsNeuralBtn'), stemsPlayBtn: $('stemsPlayBtn'),
+        stemsResetBtn: $('stemsResetBtn'), stemsAllBtn: $('stemsAllBtn'), stemsSplitBtn: $('stemsSplitBtn'), stemsNeuralBtn: $('stemsNeuralBtn'), neuralPlus4: $('neuralPlus4'), stemsPlayBtn: $('stemsPlayBtn'),
         gainDb: $('gainDb'), gainVal: $('gainVal'), lowDb: $('lowDb'), lowVal: $('lowVal'),
         highDb: $('highDb'), highVal: $('highVal'), speed: $('speed'), speedVal: $('speedVal'),
         resetSoundBtn: $('resetSoundBtn'),
@@ -5433,6 +5438,7 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         if (el.stemsAllBtn) el.stemsAllBtn.disabled = !ready;
         if (el.stemsSplitBtn) el.stemsSplitBtn.disabled = !ready;
         if (el.stemsNeuralBtn) el.stemsNeuralBtn.disabled = !ready;
+        if (el.neuralPlus4) el.neuralPlus4.disabled = !ready;
     }
 
     // «Прослушать» — переключатель: второе нажатие убирает звук
@@ -6037,10 +6043,28 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
                 const ab = await downloadNeuralModel('acc');
                 toast('Готовлю модель к работе… до минуты на первый раз', 'info', 0);
                 await tick();
-                const options = { executionProviders: ['wasm'], graphOptimizationLevel: 'all' };
-                const v = await ort.InferenceSession.create(new Uint8Array(vb), options);
-                const a = await ort.InferenceSession.create(new Uint8Array(ab), options);
-                neural.sessions = { vocals: v, acc: a };
+                const wasmOptions = { executionProviders: ['wasm'], graphOptimizationLevel: 'all' };
+                let v = null;
+                let a = null;
+                let usedGpu = false;
+                if (navigator.gpu) {
+                    // WebGPU заметно быстрее; если не заведётся — тихо остаёмся на WASM
+                    try {
+                        const gpuOptions = { executionProviders: ['webgpu', 'wasm'], graphOptimizationLevel: 'all' };
+                        v = await ort.InferenceSession.create(new Uint8Array(vb), gpuOptions);
+                        a = await ort.InferenceSession.create(new Uint8Array(ab), gpuOptions);
+                        usedGpu = true;
+                    } catch (error) {
+                        console.warn('WebGPU недоступен — WASM', error);
+                        v = null;
+                        a = null;
+                    }
+                }
+                if (!v || !a) {
+                    v = await ort.InferenceSession.create(new Uint8Array(vb), wasmOptions);
+                    a = await ort.InferenceSession.create(new Uint8Array(ab), wasmOptions);
+                }
+                neural.sessions = { vocals: v, acc: a, gpu: usedGpu };
                 return neural.sessions;
             })();
         }
@@ -6052,7 +6076,7 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         }
     }
 
-    // ОДИН чанк: x[2,1,512,1024] → маскированные магнитуды стемов [2,1,512,1024]
+    // ОДИН чанк: x[2,1,512,1024] → Wiener-маска вокала [2,512,1024]
     async function runNeuralChunk(sessions, chunkMag, frames) {
         const B = NEURAL.BINS;
         const input = new Float32Array(2 * frames * B);
@@ -6080,6 +6104,41 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         return out;
     }
 
+    // БАТЧ: несколько чанков за один прогон сети — dim1 модели num_splits это позволяет
+    async function runNeuralBatch(sessions, pairs, frames) {
+        const B = NEURAL.BINS;
+        const count = pairs.length;
+        const input = new Float32Array(2 * count * frames * B);
+        for (let k = 0; k < count; k++) {
+            for (let c = 0; c < 2; c++) {
+                input.set(pairs[k][c], ((c * count + k) * frames) * B);
+            }
+        }
+        const tensor = new ort.Tensor('float32', input, [2, count, frames, B]);
+        const [vOut, aOut] = await Promise.all([
+            sessions.vocals.run({ x: tensor }),
+            sessions.acc.run({ x: tensor }),
+        ]);
+        const mv = vOut.y.data;
+        const ma = aOut.y.data;
+        const masks = [];
+        for (let k = 0; k < count; k++) {
+            const out = new Float32Array(2 * frames * B);
+            // раскладка [2, count, frames, B]: блок канала c чанка k на (c*count + k)*frames*B
+            for (let c = 0; c < 2; c++) {
+                const base = (c * count + k) * frames * B;
+                const dst = c * frames * B;
+                for (let i = 0; i < frames * B; i++) {
+                    const v2 = mv[base + i] * mv[base + i];
+                    const a2 = ma[base + i] * ma[base + i];
+                    out[dst + i] = v2 / (v2 + a2 + 1e-10);
+                }
+            }
+            masks.push(out);
+        }
+        return masks;
+    }
+
     async function splitTrackNeural() {
         if (!app.buffer || app.busy) return;
         const audioSeconds = app.buffer.duration;
@@ -6089,6 +6148,7 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
         }
         app.busy = true;
         updateMixUi();
+        const neuralT0 = performance.now();
         try {
             const sessions = await ensureNeuralSessions();
             const src = app.buffer;
@@ -6155,24 +6215,43 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
                 }
             }
 
-            // модель по чанкам → Wiener-маска вокала → сложный спектр вокала
-            for (let k = 0; k < numChunks; k++) {
-                const vMask = await runNeuralChunk(sessions, [mag[0].subarray(k * chunkFrames * NEURAL.BINS, (k + 1) * chunkFrames * NEURAL.BINS),
-                    mag[1].subarray(k * chunkFrames * NEURAL.BINS, (k + 1) * chunkFrames * NEURAL.BINS)], chunkFrames);
-                for (let c = 0; c < 2; c++) {
-                    const rBuf = reAll[c];
-                    const iBuf = imAll[c];
-                    const mBase = k * chunkFrames * NEURAL.BINS;
-                    for (let f = 0; f < chunkFrames; f++) {
-                        for (let b = 0; b < NEURAL.BINS; b++) {
-                            const m = vMask[(c * chunkFrames + f) * NEURAL.BINS + b];
-                            rBuf[mBase + f * NEURAL.BINS + b] *= m;
-                            iBuf[mBase + f * NEURAL.BINS + b] *= m;
+            // модель по чанкам (парами — dim1 num_splits) → Wiener-маска вокала
+            for (let k = 0; k < numChunks; k += 2) {
+                const count = Math.min(2, numChunks - k);
+                const pairs = [];
+                for (let j = 0; j < count; j++) {
+                    const base = (k + j) * chunkFrames * NEURAL.BINS;
+                    pairs.push([
+                        mag[0].subarray(base, base + chunkFrames * NEURAL.BINS),
+                        mag[1].subarray(base, base + chunkFrames * NEURAL.BINS),
+                    ]);
+                }
+                let masks;
+                try {
+                    masks = await runNeuralBatch(sessions, pairs, chunkFrames);
+                } catch (error) {
+                    // если рантайм не переварил батч — честно по одному
+                    masks = [];
+                    for (const pair of pairs) masks.push(await runNeuralChunk(sessions, pair, chunkFrames));
+                }
+                for (let j = 0; j < count; j++) {
+                    const vMask = masks[j];
+                    const kk = k + j;
+                    for (let c = 0; c < 2; c++) {
+                        const rBuf = reAll[c];
+                        const iBuf = imAll[c];
+                        const mBase = kk * chunkFrames * NEURAL.BINS;
+                        for (let f = 0; f < chunkFrames; f++) {
+                            for (let b = 0; b < NEURAL.BINS; b++) {
+                                const m = vMask[(c * chunkFrames + f) * NEURAL.BINS + b];
+                                rBuf[mBase + f * NEURAL.BINS + b] *= m;
+                                iBuf[mBase + f * NEURAL.BINS + b] *= m;
+                            }
                         }
                     }
                 }
                 hideToast();
-                toast(`Нейро-разделение: сеть ${Math.round(((k + 1) / numChunks) * 50) + 40}%…`, 'info', 0);
+                toast(`Нейро-разделение: сеть ${Math.round((Math.min(k + 2, numChunks) / numChunks) * 50) + 40}%…`, 'info', 0);
                 await tick();
             }
 
@@ -6225,13 +6304,40 @@ registerProcessor('audiosplitter-stems', StemsProcessor);`;
             snapshot('нейро-разделение');
             app.samples.push({ id: app.nextSampleId++, name: 'Вокал (нейро)', buffer: mk(vL, vR), start: 0, gain: 1 });
             app.samples.push({ id: app.nextSampleId++, name: 'Минус (нейро)', buffer: mk(minusL, minusR), start: 0, gain: 1 });
+
+            // опция «+4»: минус раскладывается фильтрами на бас/верх/инструментал
+            if (el.neuralPlus4 && el.neuralPlus4.checked) {
+                toast('Нейро+4: бас, верх, инструментал из минуса…', 'info', 0);
+                await tick();
+                const bL = minusL.slice(), bR = minusR.slice();
+                const hL = minusL.slice(), hR = minusR.slice();
+                const runFilters = async (data, ...filters) => {
+                    for (let pos = 0; pos < data.length; pos += 65536) {
+                        const n = Math.min(65536, data.length - pos);
+                        filters.forEach((flt) => flt.process(data.subarray(pos, pos + n)));
+                        await tick();
+                    }
+                };
+                await runFilters(bL, makeFilter('lowpass', 140, rate), makeFilter('lowpass', 140, rate));
+                await runFilters(bR, makeFilter('lowpass', 140, rate), makeFilter('lowpass', 140, rate));
+                await runFilters(hL, makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate));
+                await runFilters(hR, makeFilter('highpass', 8000, rate), makeFilter('highpass', 8000, rate));
+                const iL = new Float32Array(len), iR = new Float32Array(len);
+                for (let i = 0; i < len; i++) { iL[i] = minusL[i] - bL[i] - hL[i]; iR[i] = minusR[i] - bR[i] - hR[i]; }
+                app.samples.push({ id: app.nextSampleId++, name: 'Бас (нейро+4)', buffer: mk(bL, bR), start: 0, gain: 1 });
+                app.samples.push({ id: app.nextSampleId++, name: 'Верх (нейро+4)', buffer: mk(hL, hR), start: 0, gain: 1 });
+                app.samples.push({ id: app.nextSampleId++, name: 'Инструментал (нейро+4)', buffer: mk(iL, iR), start: 0, gain: 1 });
+            }
+
             renderSamples();
             draw();
             app.trackMuted = true;
             applyTrackMute();
             updateTransportUi();
             hideToast();
-            toast('Готово: «Вокал (нейро)» и «Минус (нейро)» как дорожки. Трек заглушен (🔈 вернёт), ↶ отменит', 'ok', 7000);
+            const took = Math.round((performance.now() - neuralT0) / 1000);
+            const suffix = el.neuralPlus4 && el.neuralPlus4.checked ? ' + бас/верх/инструментал (+4)' : '';
+            toast(`Готово за ${took} с: «Вокал (нейро)» и «Минус (нейро)»${suffix}. Трек заглушен (🔈 вернёт), ↶ отменит`, 'ok', 7000);
         } catch (error) {
             console.error(error);
             hideToast();
